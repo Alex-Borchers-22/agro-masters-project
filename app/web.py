@@ -184,6 +184,30 @@ def home():
     session.pop('model', None)
     return render_template('index.html')
 
+@app.route("/menu.html",methods=['GET', 'POST'])
+def menu():
+    """
+    Operates the menu(menu.html) web page.
+    """
+    form = LabelForm()
+    
+    """
+    if 'model' not in session:#Start
+        return initializeAL(form, .7)
+
+    elif session['queue'] == [] and session['labels'] == []: # Need more pictures
+        return getNextSetOfImages(form, lowestPercentage)
+
+    elif form.is_submitted() and session['queue'] == []:# Finished Labeling
+        return prepairResults(form)
+
+    elif form.is_submitted() and session['queue'] != []: #Still gathering labels
+        session['labels'].append(form.choice.data)
+        return renderLabel(form)
+    """
+
+    return render_template('menu.html', form = form)
+
 @app.route("/label.html",methods=['GET', 'POST'])
 def label():
     """

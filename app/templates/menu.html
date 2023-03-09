@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/menu_format.css') }}">
+<body>
+	<div class="container">
+		<div class="row border-bottom">
+			<h1 class="font-weight-light pb-3 mb-2 mt-4">MR Options</h1>
+		</div>
+		<div class="text-right">
+			<a href="index.html"><button
+					class="mb-2 mt-4 active_button">Home</button></a>
+		</div>
+		<div class="col-lg-10 custom-col-xl-9">
+			<div class="card flex-row my-5 shadow rounded-lg border-0">
+				<div class="card-body">
+					<br>
+					<p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Metamorphic Relations" 
+						data-content="Metamorphic Relations (MR) can be used to help identify bugs in Machine Learning Implementations. MR are relations that do not have an impact on how the models make predictions" data-html="true">
+						<span class="fas fa-bullhorn" style="font-size:24px"></span>
+					</a></p>
+					<br>
+					<p>&#10146; Use the buttons checkboxes to compare different metamorphic relations
+					<div class = 'card-radio-div card-listener'>
+						<h5>Switch RBG Channels</h5>
+						<input name = 'rgb_channel' type = 'radio' id = 'rgb' checked><label for = 'rgb'>RGB (Standard)</label> <br>
+						<input name = 'rgb_channel' type = 'radio' id = 'bgr'><label for = 'bgr'>BGR</label><br>
+						<input name = 'rgb_channel' type = 'radio' id = 'brg'><label for = 'brg'>BRG</label><br>
+						<input name = 'rgb_channel' type = 'radio' id = 'gbr'><label for = 'gbr'>GBR</label><br>
+						<input name = 'rgb_channel' type = 'radio' id = 'grb'><label for = 'grb'>GRB</label><br>
+						<input name = 'rgb_channel' type = 'radio' id = 'rbg'><label for = 'rbg'>RBG</label><br>
+					</div>
+					<div class = 'card-radio-div card-listener'>
+						<h5>Multiply by Constant</h5>
+						<input name = 'multiply_by_constant' type = 'radio' id = '1' checked><label for = '1'>1x (Standard)</label> <br>
+						<input name = 'multiply_by_constant' type = 'radio' id = '0.5'><label for = '0.5'>0.5x</label><br>
+						<input name = 'multiply_by_constant' type = 'radio' id = '2'><label for = '2'>2</label><br>
+						<input name = 'multiply_by_constant' type = 'radio' id = '4'><label for = '4'>4</label><br>
+						<input name = 'multiply_by_constant' type = 'radio' id = '8'><label for = '8'>8</label><br>
+						<input name = 'multiply_by_constant' type = 'radio' id = '16'><label for = '16'>16</label><br>
+					</div>
+					<div class = 'card-radio-div card-listener'>
+						<h5>Transform</h5>
+						<input name = 'transform' type = 'radio' id = 'standard' checked><label for = 'standard'>None (Standard)</label> <br>
+						<input name = 'transform' type = 'radio' id = 'rotate90'><label for = 'rotate90'>Rotate 90</label><br>
+						<input name = 'transform' type = 'radio' id = 'rotate180'><label for = 'rotate180'>Rotate 180</label><br>
+						<input name = 'transform' type = 'radio' id = 'rotate270'><label for = 'rotate270'>Rotate 270</label><br>
+						<input name = 'transform' type = 'radio' id = 'mirror'><label for = 'mirror'>Mirror</label><br>
+					</div>
+					<div class = 'card-radio-div card-listener'>
+						<h5>Normalize Data</h5>
+						<input type = 'checkbox' id = 'normalize_data'><label for = 'normalize_data'>Normalize (On/Off)</label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-lg-10 custom-col-xl-9 mx-auto">
+				<div class="card flex-row my-5 shadow rounded-lg border-0">
+					<div class="card-img-left d-none d-md-flex rounded-lg border-0">
+						<img
+							id = 'original_image'
+							src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+							style="width: 500px; height: 400px;">
+						<img
+							id = 'modified_image'
+							src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+							style="width: 500px; height: 400px; object-fit:cover;">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class = "row">
+			<a href="label.html"><button
+				class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2">Move to Labeling</button></a>
+		</div>
+	</div>
+	<script>
+    $(document).ready(function(){
+    	$('[data-toggle="popover"]').popover();
+
+		// Add event listener to radio buttons
+		$('.card-listener input').on("change", function(){
+			modify_image();
+		});
+
+    });
+
+
+	// Set globals for canvas width & height
+	const c_width = 1200, c_height = 800;
+
+	function modify_image(){
+
+		// Get image element
+		var imageElement = document.getElementById('original_image');
+
+		// Create a canvas element
+		var canvas = document.createElement('canvas');
+		canvas.width = c_width;
+		canvas.height = c_height;
+
+		// Draw the image onto the canvas
+		var ctx = canvas.getContext('2d');
+		ctx.drawImage(imageElement, 0, 0);
+
+		// Get the image data from the canvas
+		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+		ctx = reformat_rgb(ctx, imageData, $('input[type=radio][name=rgb_channel]:checked').attr('id'));
+		ctx = reformat_by_constant(ctx, imageData, $('input[type=radio][name=multiply_by_constant]:checked').attr('id'));
+		ctx = reformat_by_transform(ctx, imageData, $('input[type=radio][name=transform]:checked').attr('id'));
+
+		if (document.getElementById('normalize_data').checked)
+			ctx = reformat_by_normalizing_data(ctx, imageData, );
+
+		// Set the image source to the modified image data
+		document.getElementById('modified_image').src = canvas.toDataURL();
+
+	}
+
+	/**
+	 * Handles reformating image by changing rbg channels
+	 * @author Alex Borchers
+	 * @param {HTMLElement} ctx (canvas object)
+	 * @param {HTMLElement} imageData 
+	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
+	 * @returns {HTMLElement} newly formatted canvas object
+	 * 
+	*/
+	function reformat_rgb(ctx, imageData, rgb_order) {
+
+		// Validate rgb_order
+		if (!validate_rgb(rgb_order)){
+			alert("[Error] The RGB parameter does not meet the given criteria.");
+			return;
+		}
+
+		// Get the image data from the canvas
+		var data = imageData.data;
+
+		// Get index of rgb channels
+		const rIndex = rgb_order.indexOf('r');
+		const gIndex = rgb_order.indexOf('g');
+		const bIndex = rgb_order.indexOf('b');
+
+		// Modify the RGB values to switch red and blue channels
+		for (let i = 0; i < data.length; i += 4) {
+	
+			// Get red, green & blue channels
+			var red = data[i + rIndex];
+			var green = data[i + gIndex];
+			var blue = data[i + bIndex];
+
+			// Update to new channels
+			data[i] = red;
+			data[i + 1] = green;
+			data[i + 2] = blue;
+		}
+
+		// Put the modified image data back onto the canvas
+		ctx.putImageData(imageData, 0, 0);
+
+		// Return modified object
+		return ctx;
+	}
+
+	/**
+	 * Handles validating rgb_order syntax
+	 * @param {string} rgb_order (order of channels)
+	 * @returns {boolean} false=error
+	*/
+	function validate_rgb(rgb_order){
+		// Set value keys & check for index
+		var check_keys = ["rgb", "bgr", "brg", "gbr", "grb", "rbg"];
+		return check_keys.includes(rgb_order);
+	}
+
+	/**
+	 * Handles reformating image by multiplying input channel by constant
+	 * @author Alex Borchers
+	 * @param {HTMLElement} ctx (canvas object)
+	 * @param {HTMLElement} imageData (canvas object)
+	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
+	 * @returns {HTMLElement} newly formatted canvas object
+	 * 
+	*/
+	function reformat_by_constant(ctx, imageData, constant) {
+
+		// Get the image data from the canvas
+		var data = imageData.data;
+
+		// Modify the channels multiplying by a constant
+		for (let i = 0; i < data.length; i++) {
+			data[i] = parseInt(data[i]) * parseFloat(constant);
+		}
+
+		// Put the modified image data back onto the canvas
+		ctx.putImageData(imageData, 0, 0);
+
+		// Return modified object
+		return ctx;
+	}
+
+	/**
+	 * Handles reformating image by transforming canvas object
+	 * @author Alex Borchers
+	 * @param {HTMLElement} ctx (canvas object)
+	 * @param {HTMLElement} imageData (canvas object)
+	 * @param {string} transform (rotate90/rotate180/rotate270/mirror)
+	 * @returns {HTMLElement} newly formatted canvas object
+	 * 
+	*/
+	function reformat_by_transform(ctx, imageData, transform) {
+
+		// Get the image data from the canvas
+		var data = imageData.data;
+
+		// Create temporary canvas for image mirroring
+		var temp_canvas = document.createElement('canvas');
+		temp_canvas.width = c_width;
+		temp_canvas.height = c_height;
+		var temp_ctx = temp_canvas.getContext('2d');
+
+		// Apply the transform to the canvas
+		switch(transform) {
+			case 'rotate90':
+				// Rotate image 90 degrees
+				temp_ctx.translate(c_height, 0);
+				temp_ctx.rotate(Math.PI / 2);
+				temp_ctx.drawImage(ctx.canvas, 0, 0);
+
+				// Update image data with rotated image data
+				imageData = temp_ctx.getImageData(0, 0, c_height, c_width);
+				data = imageData.data;
+
+				// Adjust object position so overlay is hidden
+				document.getElementById('modified_image').style.objectPosition = "-100% 0";
+
+				break;
+			case 'rotate180':
+				// Rotate image 180 degrees
+				temp_ctx.translate(c_width, c_height);
+				temp_ctx.rotate(Math.PI);
+				temp_ctx.drawImage(ctx.canvas, 0, 0);
+
+				// Update image data with rotated image data
+				imageData = temp_ctx.getImageData(0, 0, c_width, c_height);
+				data = imageData.data;
+
+				// Adjust object position so overlay is hidden
+				document.getElementById('modified_image').style.objectPosition = "";
+
+				break;
+			case 'rotate270':
+				// Rotate image 270 degrees
+				temp_ctx.translate(0, c_width);
+				temp_ctx.rotate(-Math.PI / 2);
+				temp_ctx.drawImage(ctx.canvas, 0, 0);
+
+				// Update image data with rotated image data
+				imageData = temp_ctx.getImageData(0, 0, c_height, c_width);
+				data = imageData.data;
+
+				// Adjust object position so overlay is hidden
+				document.getElementById('modified_image').style.objectPosition = "-100% 0";
+
+				break;
+			case 'mirror':
+				// Mirror image
+				temp_ctx.translate(c_width, 0);
+				temp_ctx.scale(-1, 1);
+				temp_ctx.drawImage(ctx.canvas, 0, 0);
+
+				// Update image data with mirrored image data
+				imageData = temp_ctx.getImageData(0, 0, c_width, c_height);
+				data = imageData.data;
+
+				// Adjust object position so overlay is hidden
+				document.getElementById('modified_image').style.objectPosition = "";
+
+				break;
+			default:
+				break;
+		}
+
+		// Put the modified image data back onto the canvas
+		ctx.putImageData(imageData, 0, 0);
+
+		return ctx;
+
+	}
+
+	/**
+	 * Handles reformating image by normalizing data
+	 * @author Alex Borchers
+	 * @param {HTMLElement} ctx (canvas object)
+	 * @param {HTMLElement} imageData (canvas object)
+	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
+	 * @returns {HTMLElement} newly formatted canvas object
+	 * 
+	*/
+	function reformat_by_normalizing_data(ctx, imageData, constant) {
+
+		// Get the image data from the canvas
+		var data = imageData.data;
+
+		// Get standard deviation of data to use as a devisor
+		var std_dev = getStandardDeviation(data);
+		//alert(std_dev);		//15.366...
+
+		for (var i = 0; i < data.length; i++) {
+			data[i] /= std_dev;
+		}
+
+		// Put the modified image data back onto the canvas
+		ctx.putImageData(imageData, 0, 0);
+
+		// Return modified object
+		return ctx;
+	}
+
+	// Source https://stackoverflow.com/questions/7343890/standard-deviation-javascript 
+	function getStandardDeviation (array) {
+		const n = array.length
+		const mean = array.reduce((a, b) => a + b) / n
+		return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+	}
+
+    </script>
+</body>
+</html>
+{% endblock %}
