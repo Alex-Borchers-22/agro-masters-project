@@ -17,6 +17,8 @@ import os
 import numpy as np
 import boto3
 from io import StringIO
+import csv
+from PIL import Image #to open images
 
 bootstrap = Bootstrap(app)
 
@@ -29,14 +31,49 @@ def getData():
     data : Pandas DataFrame
         The data that contains the features for each image.
     """
+
+    # Loads in full csvOut data (name & classification)
+    with open('csvOut_names.csv', newline='') as csvfile:
+        cls_full = list(csv.reader(csvfile))
+
+    # Path to images in local directory
+    path = "images_handheld_resized"
+
+    # Initialize array for classification name & data
+    cls = []
+    data = []
+
+    # loop through files and get bit map for each (save as object where filename => bitmap for r,g,b)
+    for index, file in enumerate(cls_full):
+        
+        # push classification to list
+        cls.append(file[1])
+        
+        # method found https://stackoverflow.com/questions/46385999/transform-an-image-to-a-bitmap
+        img = Image.open(path + "\\" + file[0]).resize((120, 80))
+        
+        # append data from image
+        data.append(np.array(img).reshape(-1))
+
+    return data
+
+    """
+    Old code (3/22/2023): 
+
     s3 = boto3.client('s3')
     path = 'csvOut.csv'
 
     data = pd.read_csv(path, index_col = 0, header = None)
+
+    for d in data: 
+        print(d)
+
     data.columns = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
 
     data_mod = data.astype({'8': 'int32','9': 'int32','10': 'int32','12': 'int32','14': 'int32'})
     return data_mod.iloc[:, :-1]
+
+    """
 
 def createMLModel(data):
     """
@@ -60,7 +97,7 @@ def createMLModel(data):
     train_set['y_value'] = train_img_label
 
     #can replace RandomForestClassifier with some SVM
-    ml_model = ML_Model(train_set, SVC(kernel='rbf', probability = True, random_state=1), DataPreprocessing(True))
+    ml_model = ML_Model(train_set, SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale"), DataPreprocessing(True))
     return ml_model, train_img_names
 
 def renderLabel(form):
@@ -80,18 +117,20 @@ def renderLabel(form):
     queue = session['queue']
     img = queue.pop()
     session['queue'] = queue
-    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'])
+    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'], rgb_channel = session['rgb_channel'], multiply_by_constant = session['multiply_by_constant'], transform = session['transform'], normalize_data = session['normalize_data'])
 
-def initializeAL(form, confidence_break = .7):
+def initializeAL(form, confidence_break, mr_relations):
     """
     Initializes the active learning model and sets up the webpage with everything needed to run the application.
 
     Parameters
     ----------
     form : LabelForm class object
-        form to be used when displaying label.html
+        form to be used when displaying label.html    
     confidence_break : number
         How confident the model is.
+    mr_relations : Dictionary
+        The MR relations selected on menu.html. (rgb, multiply_by_constant, transform, normalize_data)
 
     Returns
     -------
@@ -99,7 +138,7 @@ def initializeAL(form, confidence_break = .7):
         renders the label.html webpage.
     """
     preprocess = DataPreprocessing(True)
-    ml_classifier = SVC(kernel='rbf', probability=True, random_state=1)
+    ml_classifier = SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale")
     data = getData()
     al_model = Active_ML_Model(data, ml_classifier, preprocess)
 
@@ -111,6 +150,12 @@ def initializeAL(form, confidence_break = .7):
     session['train'] = al_model.train
     session['model'] = True
     session['queue'] = list(al_model.sample.index.values)
+
+    # set metamorphic relation defaults
+    session['rgb_channel'] = format(mr_relations['rgb_channel'])
+    session['multiply_by_constant'] = format(mr_relations['multiply_by_constant'])
+    session['transform'] = format(mr_relations['transform'])
+    session['normalize_data'] = format(mr_relations['normalize_data'])
 
     return renderLabel(form)
 
@@ -215,7 +260,12 @@ def label():
     """
     form = LabelForm()
     if 'model' not in session:#Start
-        return initializeAL(form, .7)
+        mr_relations = {}
+        mr_relations['rgb_channel'] = request.form.get('rgb_channel')
+        mr_relations['multiply_by_constant'] = request.form.get('multiply_by_constant')
+        mr_relations['transform'] = request.form.get('transform')
+        mr_relations['normalize_data'] = request.form.get('normalize_data') #on/None
+        return initializeAL(form, .7, mr_relations)
 
     elif session['queue'] == [] and session['labels'] == []: # Need more pictures
         return getNextSetOfImages(form, lowestPercentage)
@@ -227,7 +277,7 @@ def label():
         session['labels'].append(form.choice.data)
         return renderLabel(form)
 
-    return render_template('label.html', form = form)
+    return render_template('label.html', form = form, rgb_channel = session['rgb_channel'])
 
 @app.route("/intermediate.html",methods=['GET'])
 def intermediate():
