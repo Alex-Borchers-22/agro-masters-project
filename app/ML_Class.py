@@ -247,8 +247,9 @@ class Active_ML_Model:
         """
         from sklearn.utils import shuffle
         data = shuffle(data)
-        self.sample = data.iloc[:n_samples, :]
-        self.test = data.iloc[n_samples:, :]
+        #self.sample = data.iloc[:n_samples, :]
+        self.sample = data[:n_samples]
+        self.test = data[n_samples:]
         self.train = None
         self.ml_classifier = ml_classifier
         self.preprocess = preprocess

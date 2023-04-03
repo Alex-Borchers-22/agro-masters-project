@@ -4,9 +4,9 @@
 <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/menu_format.css') }}">
 <body>
 	<form action="label.html" method="post">
-		<div class="container">
+		<div id = 'step1' class="container">
 			<div class="row border-bottom">
-				<h1 class="font-weight-light pb-3 mb-2 mt-4">MR Options</h1>
+				<h1 class="font-weight-light pb-3 mb-2 mt-4">Metamorphic Relations Options</h1>
 			</div>
 			<div class="text-right">
 				<a href="index.html"><button
@@ -20,9 +20,7 @@
 						<p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Metamorphic Relations" 
 							data-content="Metamorphic Relations (MR) can be used to help identify bugs in Machine Learning Implementations. MR are relations that do not have an impact on how the models make predictions" data-html="true">
 							<span class="fas fa-bullhorn" style="font-size:24px"></span>
-						</a></p>
-						<br>
-						<p>&#10146; Use the buttons checkboxes to compare different metamorphic relations
+						</a> Use the checkboxes to compare different metamorphic relations</p>
 						<div class = 'card-radio-div card-listener'>
 							<h5>Switch RBG Channels</h5>
 							<input name = 'rgb_channel' type = 'radio' id = 'rgb' value = 'rgb' checked><label for = 'rgb'>RGB (Standard)</label> <br>
@@ -53,31 +51,94 @@
 							<h5>Normalize Data</h5>
 							<input type = 'checkbox' name = 'normalize_data' id = 'normalize_data'><label for = 'normalize_data'>Normalize (On/Off)</label>
 						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-lg-10 custom-col-xl-9 mx-auto">
-					<div class="card flex-row my-5 shadow rounded-lg border-0">
-						<div class="card-img-left d-none d-md-flex rounded-lg border-0">
-							<img
-								id = 'original_image'
-								src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
-								style="width: 500px; height: 400px;">
-							<img
-								id = 'modified_image'
-								src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
-								style="width: 500px; height: 400px; object-fit:cover;">
+						<div class = 'card-radio-div card-listener'>
+							<h5>Invert Data</h5>
+							<input type = 'checkbox' name = 'invert_data' id = 'invert_data'><label for = 'invert_data'>Invert (On/Off)</label>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class = "row">
-				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2" type = 'submit' value = "Move to Labeling">
+			<div class = 'custom-card'>
+				<img
+					id = 'original_image'
+					src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+					class = 'menu_img'>
+				<img
+					id = 'modified_image'
+					src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+					class = 'menu_img'
+					style = 'object-fit: cover;'>
+			</div>	
+			<div class = "row" style = "margin: 2em 0em;">
+				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2 custom-label" type = 'button' value = "Go to Hyperparameters" onclick = 'go_to_step2()'>
 			</div>
 		</div>
+		<div id = 'step2' class="container" style = 'display: none;'>
+			<div class="row border-bottom">
+				<h1 class="font-weight-light pb-3 mb-2 mt-4">Hyperparameters</h1>
+			</div>
+			<div class="text-right">
+				<button class="mb-2 mt-4 active_button" onclick = 'go_to_step1()'>Go Back to MR Relations</button>
+				<a href="index.html"><button
+						class="mb-2 mt-4 active_button">Home</button></a>
+			</div>
+			<div class="col-lg-10 custom-col-xl-9">
+				<div class="card flex-row my-5 shadow rounded-lg border-0">
+					<div class="card-body">
+						<br>
+						<p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Hyperparameters" 
+							data-content="Hyperparameters are parameters that cannot be learned from the data during training and must be set before training. Hyperparameters are chosen by the user and are used to control the behavior of the model. The performance of an SVM model depends heavily on the choice of hyperparameters." data-html="true">
+							<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a>
+						Use the radio buttons to select your hyperparameters. Click on the icon next to each section to learn more. </p>
+						<div class = 'card-radio-div'>
+							<h5>Kernel<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Kernel" 
+								data-content="The kernel function is used to transform the input data into a higher dimensional space where it is easier to find a linear boundary between classes." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'kernel' type = 'radio' id = 'sigmoid' value = 'sigmoid' checked><label for = 'sigmoid'>Sigmoid</label> <br>
+							<input name = 'kernel' type = 'radio' id = 'rbf' value = 'rbf'><label for = 'rbf'>Radial Basis Function (RBF)</label><br>
+							<input name = 'kernel' type = 'radio' id = 'poly' value = 'poly'><label for = 'poly'>Polynomial</label><br>
+							<input name = 'kernel' type = 'radio' id = 'linear' value = 'linear'><label for = 'linear'>Linear</label><br>
+						</div>
+						<div class = 'card-radio-div'>
+							<h5>C<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="C" 
+								data-content="The penalty parameter C determines the trade-off between maximizing the margin and minimizing the classification error. A smaller value of C allows for more margin violations but results in a wider margin, while a larger value of C results in a narrower margin and fewer margin violations." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'c' type = 'radio' id = 'c_0.1' value = '0.1' checked><label for = 'c_0.1'>0.1</label> <br>
+							<input name = 'c' type = 'radio' id = 'c_1' value = '1'><label for = 'c_1'>1</label><br>
+							<input name = 'c' type = 'radio' id = 'c_10' value = '10'><label for = 'c_10'>10</label><br>
+							<input name = 'c' type = 'radio' id = 'c_100' value = '100'><label for = 'c_100'>100</label><br>
+							<input name = 'c' type = 'radio' id = 'c_1000' value = '1000'><label for = 'c_1000'>1000</label><br>
+						</div>
+						<div class = 'card-radio-div'>
+							<h5>Gamma<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Gamma" 
+								data-content="The gamma parameter controls the width of the RBF kernel function. A smaller value of gamma results in a wider kernel and a smoother decision boundary, while a larger value of gamma results in a narrower kernel and a more complex decision boundary." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'gamma' type = 'radio' id = 'auto' value = 'auto' checked><label for = 'auto'>Auto</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'scale' value = 'scale'><label for = 'scale'>Scale</label>
+							<!-- <input name = 'gamma' type = 'radio' id = 'g_0.0001' value = '0.1' checked><label for = 'g_0.0001'>0.0001</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.001' value = '1'><label for = 'g_0.001'>0.001</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.01' value = '10'><label for = 'g_0.01'>0.01</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.1' value = '100'><label for = 'g_0.1'>0.1</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_1' value = '1000'><label for = 'g_1'>1</label><br> -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class = "row" style = "margin: 2em 0em;">
+				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2 custom-label" type = 'button' value = "Go to Labeling" onclick = 'go_to_labeling()'>
+			</div>
+		</div>
+		<div class="loading-icon" id = "loading-icon" style = 'display:none'></div>
+		<input type = 'submit' id = 'go_to_label_button' style = 'display:none'>
 	</form>
+	<script type = "text/javascript" src="{{ url_for('static',filename='js/mr_formats.js') }}"></script>
 	<script>
+
+	// Add event listeners & styling to certain elements on load
     $(document).ready(function(){
     	$('[data-toggle="popover"]').popover();
 
@@ -85,8 +146,24 @@
 		$('.card-listener input').on("change", function(){
 			modify_image();
 		});
-
     });
+
+	// Handles moving from step 1 to step 2 & back
+	function go_to_step2(){
+		document.getElementById('step1').style.display = "none";
+		document.getElementById('step2').style.display = "block";
+	}
+	function go_to_step1(){
+		document.getElementById('step2').style.display = "none";
+		document.getElementById('step1').style.display = "block";
+	}
+
+	// Handles moving to labeling & showing wait icon while loading
+	function go_to_labeling(){
+		document.getElementById('step2').style.display = "none";
+		document.getElementById('loading-icon').style.display = "block";
+		document.getElementById('go_to_label_button').click();
+	}
 
 	// Set globals for canvas width & height
 	const c_width = 1200, c_height = 800;
@@ -113,219 +190,14 @@
 		ctx = reformat_by_transform(ctx, imageData, $('input[type=radio][name=transform]:checked').attr('id'));
 
 		if (document.getElementById('normalize_data').checked)
-			ctx = reformat_by_normalizing_data(ctx, imageData, );
+			ctx = reformat_by_normalizing_data(ctx, imageData);
 
+		if (document.getElementById('invert_data').checked)
+			ctx = reformat_by_inverting_data(ctx, imageData);
+		
 		// Set the image source to the modified image data
 		document.getElementById('modified_image').src = canvas.toDataURL();
 
-	}
-
-	/**
-	 * Handles reformating image by changing rbg channels
-	 * @author Alex Borchers
-	 * @param {HTMLElement} ctx (canvas object)
-	 * @param {HTMLElement} imageData 
-	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
-	 * @returns {HTMLElement} newly formatted canvas object
-	 * 
-	*/
-	function reformat_rgb(ctx, imageData, rgb_order) {
-
-		// Validate rgb_order
-		if (!validate_rgb(rgb_order)){
-			alert("[Error] The RGB parameter does not meet the given criteria.");
-			return;
-		}
-
-		// Get the image data from the canvas
-		var data = imageData.data;
-
-		// Get index of rgb channels
-		const rIndex = rgb_order.indexOf('r');
-		const gIndex = rgb_order.indexOf('g');
-		const bIndex = rgb_order.indexOf('b');
-
-		// Modify the RGB values to switch red and blue channels
-		for (let i = 0; i < data.length; i += 4) {
-	
-			// Get red, green & blue channels
-			var red = data[i + rIndex];
-			var green = data[i + gIndex];
-			var blue = data[i + bIndex];
-
-			// Update to new channels
-			data[i] = red;
-			data[i + 1] = green;
-			data[i + 2] = blue;
-		}
-
-		// Put the modified image data back onto the canvas
-		ctx.putImageData(imageData, 0, 0);
-
-		// Return modified object
-		return ctx;
-	}
-
-	/**
-	 * Handles validating rgb_order syntax
-	 * @param {string} rgb_order (order of channels)
-	 * @returns {boolean} false=error
-	*/
-	function validate_rgb(rgb_order){
-		// Set value keys & check for index
-		var check_keys = ["rgb", "bgr", "brg", "gbr", "grb", "rbg"];
-		return check_keys.includes(rgb_order);
-	}
-
-	/**
-	 * Handles reformating image by multiplying input channel by constant
-	 * @author Alex Borchers
-	 * @param {HTMLElement} ctx (canvas object)
-	 * @param {HTMLElement} imageData (canvas object)
-	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
-	 * @returns {HTMLElement} newly formatted canvas object
-	 * 
-	*/
-	function reformat_by_constant(ctx, imageData, constant) {
-
-		// Get the image data from the canvas
-		var data = imageData.data;
-
-		// Modify the channels multiplying by a constant
-		for (let i = 0; i < data.length; i++) {
-			data[i] = parseInt(data[i]) * parseFloat(constant);
-		}
-
-		// Put the modified image data back onto the canvas
-		ctx.putImageData(imageData, 0, 0);
-
-		// Return modified object
-		return ctx;
-	}
-
-	/**
-	 * Handles reformating image by transforming canvas object
-	 * @author Alex Borchers
-	 * @param {HTMLElement} ctx (canvas object)
-	 * @param {HTMLElement} imageData (canvas object)
-	 * @param {string} transform (rotate90/rotate180/rotate270/mirror)
-	 * @returns {HTMLElement} newly formatted canvas object
-	 * 
-	*/
-	function reformat_by_transform(ctx, imageData, transform) {
-
-		// Get the image data from the canvas
-		var data = imageData.data;
-
-		// Create temporary canvas for image mirroring
-		var temp_canvas = document.createElement('canvas');
-		temp_canvas.width = c_width;
-		temp_canvas.height = c_height;
-		var temp_ctx = temp_canvas.getContext('2d');
-
-		// Apply the transform to the canvas
-		switch(transform) {
-			case 'rotate90':
-				// Rotate image 90 degrees
-				temp_ctx.translate(c_height, 0);
-				temp_ctx.rotate(Math.PI / 2);
-				temp_ctx.drawImage(ctx.canvas, 0, 0);
-
-				// Update image data with rotated image data
-				imageData = temp_ctx.getImageData(0, 0, c_height, c_width);
-				data = imageData.data;
-
-				// Adjust object position so overlay is hidden
-				document.getElementById('modified_image').style.objectPosition = "-100% 0";
-
-				break;
-			case 'rotate180':
-				// Rotate image 180 degrees
-				temp_ctx.translate(c_width, c_height);
-				temp_ctx.rotate(Math.PI);
-				temp_ctx.drawImage(ctx.canvas, 0, 0);
-
-				// Update image data with rotated image data
-				imageData = temp_ctx.getImageData(0, 0, c_width, c_height);
-				data = imageData.data;
-
-				// Adjust object position so overlay is hidden
-				document.getElementById('modified_image').style.objectPosition = "";
-
-				break;
-			case 'rotate270':
-				// Rotate image 270 degrees
-				temp_ctx.translate(0, c_width);
-				temp_ctx.rotate(-Math.PI / 2);
-				temp_ctx.drawImage(ctx.canvas, 0, 0);
-
-				// Update image data with rotated image data
-				imageData = temp_ctx.getImageData(0, 0, c_height, c_width);
-				data = imageData.data;
-
-				// Adjust object position so overlay is hidden
-				document.getElementById('modified_image').style.objectPosition = "-100% 0";
-
-				break;
-			case 'mirror':
-				// Mirror image
-				temp_ctx.translate(c_width, 0);
-				temp_ctx.scale(-1, 1);
-				temp_ctx.drawImage(ctx.canvas, 0, 0);
-
-				// Update image data with mirrored image data
-				imageData = temp_ctx.getImageData(0, 0, c_width, c_height);
-				data = imageData.data;
-
-				// Adjust object position so overlay is hidden
-				document.getElementById('modified_image').style.objectPosition = "";
-
-				break;
-			default:
-				break;
-		}
-
-		// Put the modified image data back onto the canvas
-		ctx.putImageData(imageData, 0, 0);
-
-		return ctx;
-
-	}
-
-	/**
-	 * Handles reformating image by normalizing data
-	 * @author Alex Borchers
-	 * @param {HTMLElement} ctx (canvas object)
-	 * @param {HTMLElement} imageData (canvas object)
-	 * @param {string} constant (rbg/bgr/brg/gbr/grb/rbg)
-	 * @returns {HTMLElement} newly formatted canvas object
-	 * 
-	*/
-	function reformat_by_normalizing_data(ctx, imageData, constant) {
-
-		// Get the image data from the canvas
-		var data = imageData.data;
-
-		// Get standard deviation of data to use as a devisor
-		var std_dev = getStandardDeviation(data);
-		//alert(std_dev);		//15.366...
-
-		for (var i = 0; i < data.length; i++) {
-			data[i] /= std_dev;
-		}
-
-		// Put the modified image data back onto the canvas
-		ctx.putImageData(imageData, 0, 0);
-
-		// Return modified object
-		return ctx;
-	}
-
-	// Source https://stackoverflow.com/questions/7343890/standard-deviation-javascript 
-	function getStandardDeviation (array) {
-		const n = array.length
-		const mean = array.reduce((a, b) => a + b) / n
-		return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
 	}
 
     </script>

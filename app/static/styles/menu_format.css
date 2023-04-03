@@ -47,3 +47,30 @@ body {
   flex: 0 0 100%;
   max-width: 100% !important;
 }
+.card, .custom-card{
+  width: 62.5em !important;
+  margin: 0 auto;
+}
+.menu_img{
+  width: 498px;
+  height: 400px;
+  padding: 3px;
+}
+.custom-label{
+  width: 66em !important;
+  margin: 0 auto !important;
+}
+.loading-icon {
+  border: 20px solid #f3f3f3;
+  border-top: 20px solid #4caf50;
+  border-radius: 50%;
+  width: 400px;
+  height: 400px;
+  animation: spin 2s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

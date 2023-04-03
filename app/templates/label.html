@@ -23,9 +23,7 @@
 					    <br>
 					    <p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Useful Tips" data-content="The image can be identified as &quot;healthy&quot; if it satisfies the following conditions: green, no dark spots on the leaves, and not wilted. Otherwise, it's unhealthy. <br /><br />The training labels you provide will teach AI to recognize patterns and features on its own" data-html="true">
                             <span class="fas fa-bullhorn" style="font-size:24px"></span>
-                        </a></p>
-                        <br>
-						<p>&#10146; Use the buttons to label an image as "Healthy" or
+                        </a> Use the buttons to label an image as "Healthy" or
 							"Unhealthy"</p>
 						<form class="form form-horizontal" action="" method="post">
 							<p>{{form.choice()}}</p>
@@ -38,7 +36,7 @@
 	</div>
 	<script>
     $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
+    	$('[data-toggle="popover"]').popover();
     });
     </script>
 </body>
