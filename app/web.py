@@ -17,7 +17,11 @@ import os
 import numpy as np
 import boto3
 from io import StringIO
+import csv
+from PIL import Image #to open images
+import pickle
 
+pickle_filename = "app/pre_trained_models/best_trained1.sav"
 bootstrap = Bootstrap(app)
 
 def getData():
@@ -29,14 +33,36 @@ def getData():
     data : Pandas DataFrame
         The data that contains the features for each image.
     """
-    s3 = boto3.client('s3')
-    path = 'csvOut.csv'
 
-    data = pd.read_csv(path, index_col = 0, header = None)
-    data.columns = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']
+    # Loads in full csvOut data (name & classification)
+    with open('csvOut_names.csv', newline='') as csvfile:
+        cls_full = list(csv.reader(csvfile))
 
-    data_mod = data.astype({'8': 'int32','9': 'int32','10': 'int32','12': 'int32','14': 'int32'})
-    return data_mod.iloc[:, :-1]
+    # Path to images in local directory
+    path = "images_handheld_resized"
+
+    # Initialize array for classification name & data
+    bitmap = {}
+
+    # loop through files and get bit map for each (save as object where filename => bitmap for r,g,b)
+    for index, file in enumerate(cls_full):
+        
+        # method found https://stackoverflow.com/questions/46385999/transform-an-image-to-a-bitmap
+        #img = Image.open(path + "\\" + file[0]).resize((120, 80))
+        #img = Image.open(path + "\\" + file[0]).resize((48, 36))
+        img = Image.open(path + "\\" + file[0]).resize((3, 2))
+        
+        # set dictionary reference
+        bitmap[file[0]] = np.array(img).reshape(-1)
+
+    # convert dictionary to pandas data# Create a pandas DataFrame with image names as index and their bitmaps as values
+    df = pd.DataFrame.from_dict(bitmap, orient='index')
+
+    # Set the column and index names
+    df.index.name = 'Image Name'
+    df.columns.name = 'Bitmap'
+
+    return df
 
 def createMLModel(data):
     """
@@ -59,8 +85,14 @@ def createMLModel(data):
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
 
+    # get existing best trained model from stored pickle file
+    pre_trained = pickle.load(open(pickle_filename, 'rb'))
+
     #can replace RandomForestClassifier with some SVM
-    ml_model = ML_Model(train_set, SVC(kernel='rbf', probability = True, random_state=1), DataPreprocessing(True))
+    #ml_model = ML_Model(train_set, SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True), DataPreprocessing(True))
+    ml_model = ML_Model(train_set, SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True), DataPreprocessing(True))
+    #ml_model = ML_Model(train_set, pre_trained, DataPreprocessing(True))
+
     return ml_model, train_img_names
 
 def renderLabel(form):
@@ -80,28 +112,46 @@ def renderLabel(form):
     queue = session['queue']
     img = queue.pop()
     session['queue'] = queue
-    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'])
+    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'], rgb_channel = session['rgb_channel'], multiply_by_constant = session['multiply_by_constant'], transform = session['transform'], normalize_data = session['normalize_data'])
 
-def initializeAL(form, confidence_break = .7):
+def initializeAL(form, confidence_break, user_defaults):
     """
     Initializes the active learning model and sets up the webpage with everything needed to run the application.
 
     Parameters
     ----------
     form : LabelForm class object
-        form to be used when displaying label.html
+        form to be used when displaying label.html    
     confidence_break : number
         How confident the model is.
+    user_defaults : Dictionary
+        The MR relations selected on menu.html. (rgb, multiply_by_constant, transform, normalize_data)
 
     Returns
     -------
     render_template : flask function
         renders the label.html webpage.
     """
-    preprocess = DataPreprocessing(True)
-    ml_classifier = SVC(kernel='rbf', probability=True, random_state=1)
+
+    # set metamorphic relation user selections
+    session['rgb_channel'] = format(user_defaults['rgb_channel'])
+    session['multiply_by_constant'] = format(user_defaults['multiply_by_constant'])
+    session['transform'] = format(user_defaults['transform'])
+    session['normalize_data'] = format(user_defaults['normalize_data'])
+    
+    # set hyperparameter user selections
+    session['kernel'] = format(user_defaults['kernel'])
+    session['c'] = format(user_defaults['c'])
+    session['gamma'] = format(user_defaults['gamma'])
+
+    # get existing best trained model from stored pickle file
+    pre_trained = pickle.load(open(pickle_filename, 'rb'))
+
+    #ml_classifier = SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True)
+    ml_classifier = SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True)
+    #ml_classifier = pre_trained
     data = getData()
-    al_model = Active_ML_Model(data, ml_classifier, preprocess)
+    al_model = Active_ML_Model(data, ml_classifier, DataPreprocessing(True)) 
 
     session['confidence'] = 0
     session['confidence_break'] = confidence_break
@@ -184,12 +234,14 @@ def home():
     session.pop('model', None)
     return render_template('index.html')
 
-@app.route("/label.html",methods=['GET', 'POST'])
-def label():
+@app.route("/menu.html",methods=['GET', 'POST'])
+def menu():
     """
-    Operates the label(label.html) web page.
+    Operates the menu(menu.html) web page.
     """
     form = LabelForm()
+    
+    """
     if 'model' not in session:#Start
         return initializeAL(form, .7)
 
@@ -202,8 +254,38 @@ def label():
     elif form.is_submitted() and session['queue'] != []: #Still gathering labels
         session['labels'].append(form.choice.data)
         return renderLabel(form)
+    """
 
-    return render_template('label.html', form = form)
+    return render_template('menu.html', form = form)
+
+@app.route("/label.html",methods=['GET', 'POST'])
+def label():
+    """
+    Operates the label(label.html) web page.
+    """
+    form = LabelForm()
+    if 'model' not in session:#Start
+        user_defaults = {}
+        user_defaults['rgb_channel'] = request.form.get('rgb_channel')
+        user_defaults['multiply_by_constant'] = request.form.get('multiply_by_constant')
+        user_defaults['transform'] = request.form.get('transform')
+        user_defaults['normalize_data'] = request.form.get('normalize_data') #on/None
+        user_defaults['kernel'] = request.form.get('kernel') #on/None
+        user_defaults['c'] = request.form.get('c') #on/None
+        user_defaults['gamma'] = request.form.get('gamma') #on/None
+        return initializeAL(form, .7, user_defaults)
+
+    elif session['queue'] == [] and session['labels'] == []: # Need more pictures
+        return getNextSetOfImages(form, lowestPercentage)
+
+    elif form.is_submitted() and session['queue'] == []:# Finished Labeling
+        return prepairResults(form)
+
+    elif form.is_submitted() and session['queue'] != []: #Still gathering labels
+        session['labels'].append(form.choice.data)
+        return renderLabel(form)
+
+    return render_template('label.html', form = form, rgb_channel = session['rgb_channel'])
 
 @app.route("/intermediate.html",methods=['GET'])
 def intermediate():

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/menu_format.css') }}">
+<body>
+	<form action="label.html" method="post">
+		<div id = 'step1' class="container">
+			<div class="row border-bottom">
+				<h1 class="font-weight-light pb-3 mb-2 mt-4">Metamorphic Relations Options</h1>
+			</div>
+			<div class="text-right">
+				<a href="index.html"><button
+						class="mb-2 mt-4 active_button">Home</button></a>
+			</div>
+			<div class="col-lg-10 custom-col-xl-9">
+				<div class="card flex-row my-5 shadow rounded-lg border-0">
+				
+					<div class="card-body">
+						<br>
+						<p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Metamorphic Relations" 
+							data-content="Metamorphic Relations (MR) can be used to help identify bugs in Machine Learning Implementations. MR are relations that do not have an impact on how the models make predictions" data-html="true">
+							<span class="fas fa-bullhorn" style="font-size:24px"></span>
+						</a> Use the checkboxes to compare different metamorphic relations</p>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Switch RBG Channels</h5>
+							<input name = 'rgb_channel' type = 'radio' id = 'rgb' value = 'rgb' checked><label for = 'rgb'>RGB (Standard)</label> <br>
+							<input name = 'rgb_channel' type = 'radio' id = 'bgr' value = 'bgr'><label for = 'bgr'>BGR</label><br>
+							<input name = 'rgb_channel' type = 'radio' id = 'brg' value = 'brg'><label for = 'brg'>BRG</label><br>
+							<input name = 'rgb_channel' type = 'radio' id = 'gbr' value = 'gbr'><label for = 'gbr'>GBR</label><br>
+							<input name = 'rgb_channel' type = 'radio' id = 'grb' value = 'grb'><label for = 'grb'>GRB</label><br>
+							<input name = 'rgb_channel' type = 'radio' id = 'rbg' value = 'rbg'><label for = 'rbg'>RBG</label><br>
+						</div>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Multiply by Constant</h5>
+							<input name = 'multiply_by_constant' type = 'radio' id = '1' value = '1' checked><label for = '1'>1x (Standard)</label> <br>
+							<input name = 'multiply_by_constant' type = 'radio' id = '0.5' value = '0.5'><label for = '0.5'>0.5x</label><br>
+							<input name = 'multiply_by_constant' type = 'radio' id = '2' value = '2'><label for = '2'>2</label><br>
+							<input name = 'multiply_by_constant' type = 'radio' id = '4' value = '4'><label for = '4'>4</label><br>
+							<input name = 'multiply_by_constant' type = 'radio' id = '8' value = '8'><label for = '8'>8</label><br>
+							<input name = 'multiply_by_constant' type = 'radio' id = '16' value = '16'><label for = '16'>16</label><br>
+						</div>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Transform</h5>
+							<input name = 'transform' type = 'radio' id = 'standard' value = 'standard' checked><label for = 'standard'>None (Standard)</label> <br>
+							<input name = 'transform' type = 'radio' id = 'rotate90' value = 'rotate90'><label for = 'rotate90'>Rotate 90</label><br>
+							<input name = 'transform' type = 'radio' id = 'rotate180' value = 'rotate180'><label for = 'rotate180'>Rotate 180</label><br>
+							<input name = 'transform' type = 'radio' id = 'rotate270' value = 'rotate270'><label for = 'rotate270'>Rotate 270</label><br>
+							<input name = 'transform' type = 'radio' id = 'mirror' value = 'mirror'><label for = 'mirror'>Mirror</label><br>
+						</div>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Normalize Data</h5>
+							<input type = 'checkbox' name = 'normalize_data' id = 'normalize_data'><label for = 'normalize_data'>Normalize (On/Off)</label>
+						</div>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Invert Data</h5>
+							<input type = 'checkbox' name = 'invert_data' id = 'invert_data'><label for = 'invert_data'>Invert (On/Off)</label>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class = 'custom-card'>
+				<img
+					id = 'original_image'
+					src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+					class = 'menu_img'>
+				<img
+					id = 'modified_image'
+					src="{{ url_for('static',filename='images/DSC00025.JPG') }}"
+					class = 'menu_img'
+					style = 'object-fit: cover;'>
+			</div>	
+			<div class = "row" style = "margin: 2em 0em;">
+				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2 custom-label" type = 'button' value = "Go to Hyperparameters" onclick = 'go_to_step2()'>
+			</div>
+		</div>
+		<div id = 'step2' class="container" style = 'display: none;'>
+			<div class="row border-bottom">
+				<h1 class="font-weight-light pb-3 mb-2 mt-4">Hyperparameters</h1>
+			</div>
+			<div class="text-right">
+				<button class="mb-2 mt-4 active_button" onclick = 'go_to_step1()'>Go Back to MR Relations</button>
+				<a href="index.html"><button
+						class="mb-2 mt-4 active_button">Home</button></a>
+			</div>
+			<div class="col-lg-10 custom-col-xl-9">
+				<div class="card flex-row my-5 shadow rounded-lg border-0">
+					<div class="card-body">
+						<br>
+						<p><a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Hyperparameters" 
+							data-content="Hyperparameters are parameters that cannot be learned from the data during training and must be set before training. Hyperparameters are chosen by the user and are used to control the behavior of the model. The performance of an SVM model depends heavily on the choice of hyperparameters." data-html="true">
+							<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a>
+						Use the radio buttons to select your hyperparameters. Click on the icon next to each section to learn more. </p>
+						<div class = 'card-radio-div'>
+							<h5>Kernel<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Kernel" 
+								data-content="The kernel function is used to transform the input data into a higher dimensional space where it is easier to find a linear boundary between classes." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'kernel' type = 'radio' id = 'sigmoid' value = 'sigmoid' checked><label for = 'sigmoid'>Sigmoid</label> <br>
+							<input name = 'kernel' type = 'radio' id = 'rbf' value = 'rbf'><label for = 'rbf'>Radial Basis Function (RBF)</label><br>
+							<input name = 'kernel' type = 'radio' id = 'poly' value = 'poly'><label for = 'poly'>Polynomial</label><br>
+							<input name = 'kernel' type = 'radio' id = 'linear' value = 'linear'><label for = 'linear'>Linear</label><br>
+						</div>
+						<div class = 'card-radio-div'>
+							<h5>C<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="C" 
+								data-content="The penalty parameter C determines the trade-off between maximizing the margin and minimizing the classification error. A smaller value of C allows for more margin violations but results in a wider margin, while a larger value of C results in a narrower margin and fewer margin violations." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'c' type = 'radio' id = 'c_0.1' value = '0.1' checked><label for = 'c_0.1'>0.1</label> <br>
+							<input name = 'c' type = 'radio' id = 'c_1' value = '1'><label for = 'c_1'>1</label><br>
+							<input name = 'c' type = 'radio' id = 'c_10' value = '10'><label for = 'c_10'>10</label><br>
+							<input name = 'c' type = 'radio' id = 'c_100' value = '100'><label for = 'c_100'>100</label><br>
+							<input name = 'c' type = 'radio' id = 'c_1000' value = '1000'><label for = 'c_1000'>1000</label><br>
+						</div>
+						<div class = 'card-radio-div'>
+							<h5>Gamma<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="Gamma" 
+								data-content="The gamma parameter controls the width of the RBF kernel function. A smaller value of gamma results in a wider kernel and a smoother decision boundary, while a larger value of gamma results in a narrower kernel and a more complex decision boundary." data-html="true">
+								<span class="fas fa-bullhorn" style="font-size:24px"></span>
+							</a></h5>
+							<input name = 'gamma' type = 'radio' id = 'auto' value = 'auto' checked><label for = 'auto'>Auto</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'scale' value = 'scale'><label for = 'scale'>Scale</label>
+							<!-- <input name = 'gamma' type = 'radio' id = 'g_0.0001' value = '0.1' checked><label for = 'g_0.0001'>0.0001</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.001' value = '1'><label for = 'g_0.001'>0.001</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.01' value = '10'><label for = 'g_0.01'>0.01</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_0.1' value = '100'><label for = 'g_0.1'>0.1</label><br>
+							<input name = 'gamma' type = 'radio' id = 'g_1' value = '1000'><label for = 'g_1'>1</label><br> -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class = "row" style = "margin: 2em 0em;">
+				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2 custom-label" type = 'button' value = "Go to Labeling" onclick = 'go_to_labeling()'>
+			</div>
+		</div>
+		<div class="loading-icon" id = "loading-icon" style = 'display:none'></div>
+		<input type = 'submit' id = 'go_to_label_button' style = 'display:none'>
+	</form>
+	<script type = "text/javascript" src="{{ url_for('static',filename='js/mr_formats.js') }}"></script>
+	<script>
+
+	// Add event listeners & styling to certain elements on load
+    $(document).ready(function(){
+    	$('[data-toggle="popover"]').popover();
+
+		// Add event listener to radio buttons
+		$('.card-listener input').on("change", function(){
+			modify_image();
+		});
+    });
+
+	// Handles moving from step 1 to step 2 & back
+	function go_to_step2(){
+		document.getElementById('step1').style.display = "none";
+		document.getElementById('step2').style.display = "block";
+	}
+	function go_to_step1(){
+		document.getElementById('step2').style.display = "none";
+		document.getElementById('step1').style.display = "block";
+	}
+
+	// Handles moving to labeling & showing wait icon while loading
+	function go_to_labeling(){
+		document.getElementById('step2').style.display = "none";
+		document.getElementById('loading-icon').style.display = "block";
+		document.getElementById('go_to_label_button').click();
+	}
+
+	// Set globals for canvas width & height
+	const c_width = 1200, c_height = 800;
+
+	function modify_image(){
+
+		// Get image element
+		var imageElement = document.getElementById('original_image');
+
+		// Create a canvas element
+		var canvas = document.createElement('canvas');
+		canvas.width = c_width;
+		canvas.height = c_height;
+
+		// Draw the image onto the canvas
+		var ctx = canvas.getContext('2d');
+		ctx.drawImage(imageElement, 0, 0);
+
+		// Get the image data from the canvas
+		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+		ctx = reformat_rgb(ctx, imageData, $('input[type=radio][name=rgb_channel]:checked').attr('id'));
+		ctx = reformat_by_constant(ctx, imageData, $('input[type=radio][name=multiply_by_constant]:checked').attr('id'));
+		ctx = reformat_by_transform(ctx, imageData, $('input[type=radio][name=transform]:checked').attr('id'));
+
+		if (document.getElementById('normalize_data').checked)
+			ctx = reformat_by_normalizing_data(ctx, imageData);
+
+		if (document.getElementById('invert_data').checked)
+			ctx = reformat_by_inverting_data(ctx, imageData);
+		
+		// Set the image source to the modified image data
+		document.getElementById('modified_image').src = canvas.toDataURL();
+
+	}
+
+    </script>
+</body>
+</html>
+{% endblock %}
