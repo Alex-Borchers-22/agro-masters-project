@@ -6,7 +6,8 @@ from flask import Flask
 from flask import render_template, flash, redirect, url_for, session, request, jsonify
 from app import app
 from app.DataPreprocessing import DataPreprocessing
-from app.ML_Class import Active_ML_Model, AL_Encoder, ML_Model
+from app.ML_Class import Active_ML_Model, AL_Encoder, ML_Model, ML_PreTrained
+from app.Image_Transform_Class import Image_MR
 from app.SamplingMethods import lowestPercentage
 from app.forms import LabelForm
 from flask_bootstrap import Bootstrap
@@ -19,14 +20,12 @@ import boto3
 from io import StringIO
 import csv
 from PIL import Image #to open images
-import pickle
 
-pickle_filename = "app/pre_trained_models/best_trained1.sav"
 bootstrap = Bootstrap(app)
 
 def getData():
     """
-    Gets and returns the csvOut.csv as a DataFrame.
+    Gets bitmap of all images and returns as a DataFrame.
 
     Returns
     -------
@@ -64,6 +63,56 @@ def getData():
 
     return df
 
+def getDataModified():
+    """
+    Gets bitmap of all images, performs user defined motifications and returns as a DataFrame.
+
+    Returns
+    -------
+    data : Pandas DataFrame
+        The data that contains the features for each image.
+    """
+
+    # Loads in full csvOut data (name & classification)
+    with open('csvOut_names.csv', newline='') as csvfile:
+        cls_full = list(csv.reader(csvfile))
+
+    # Path to images in local directory
+    path = "images_handheld_resized"
+
+    # Initialize array for classification name & data
+    bitmap = {}
+
+    # loop through files and get bit map for each (save as object where filename => bitmap for r,g,b)
+    for index, file in enumerate(cls_full):
+        
+        # Method found https://stackoverflow.com/questions/46385999/transform-an-image-to-a-bitmap
+        #img = Image.open(path + "\\" + file[0]).resize((120, 80))
+        #img = Image.open(path + "\\" + file[0]).resize((48, 36))
+        img = Image.open(path + "\\" + file[0]).resize((3, 2))
+
+        mr_img = Image_MR(img)
+        mr_img.modifyRGB(session['rgb_channel'])
+        mr_img.modifyByTransform(session['transform'])
+        #mr_img.modifyByInverting(session['invert_data'])
+        
+        # Must reshape before the rest of the operations (possible upgrade later on)
+        mr_img.reshapeBitmap()
+        mr_img.modifyByConstant(session['multiply_by_constant'])
+        mr_img.modifyByNormalizing(session['normalize_data'])
+       
+        # set dictionary reference
+        bitmap[file[0]] = mr_img.image_data
+
+    # convert dictionary to pandas data# Create a pandas DataFrame with image names as index and their bitmaps as values
+    df = pd.DataFrame.from_dict(bitmap, orient='index')
+
+    # Set the column and index names
+    df.index.name = 'Image Name'
+    df.columns.name = 'Bitmap'
+
+    return df
+
 def createMLModel(data):
     """
     Prepares the training set and creates a machine learning model using the training set.
@@ -85,15 +134,30 @@ def createMLModel(data):
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
 
-    # get existing best trained model from stored pickle file
-    pre_trained = pickle.load(open(pickle_filename, 'rb'))
-
     #can replace RandomForestClassifier with some SVM
     #ml_model = ML_Model(train_set, SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True), DataPreprocessing(True))
     ml_model = ML_Model(train_set, SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True), DataPreprocessing(True))
-    #ml_model = ML_Model(train_set, pre_trained, DataPreprocessing(True))
 
     return ml_model, train_img_names
+
+def createPreTrainedModel(train_set):
+    """
+    Loads in best pre-trained model trained offline.
+
+    Parameters
+    ----------
+    
+
+    Returns
+    -------
+    ml_model : ML_Model class object (loaded from Pickle, trained with GridSearchCV)
+        ml_model pre-trained offline.
+    """
+
+    #can replace RandomForestClassifier with some SVM
+    ml_model = ML_PreTrained(train_set, DataPreprocessing(True))
+
+    return ml_model
 
 def renderLabel(form):
     """
@@ -144,12 +208,7 @@ def initializeAL(form, confidence_break, user_defaults):
     session['c'] = format(user_defaults['c'])
     session['gamma'] = format(user_defaults['gamma'])
 
-    # get existing best trained model from stored pickle file
-    pre_trained = pickle.load(open(pickle_filename, 'rb'))
-
-    #ml_classifier = SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True)
     ml_classifier = SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True)
-    #ml_classifier = pre_trained
     data = getData()
     al_model = Active_ML_Model(data, ml_classifier, DataPreprocessing(True)) 
 
@@ -211,6 +270,7 @@ def prepairResults(form):
     else:
         session['train'] = session['sample']
 
+    # Get regular set of data, & create model
     data = getData()
     ml_model, train_img_names = createMLModel(data)
 
@@ -221,9 +281,26 @@ def prepairResults(form):
         health_pic, blight_pic = ml_model.infoForProgress(train_img_names)
         return render_template('intermediate.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic, blight_user = blight_pic, healthNum_user = len(health_pic), blightNum_user = len(blight_pic))
     else:
+
+        # Get pre-trained model
+        ml_model_pretrained = createPreTrainedModel(data)
+        session['confidence_preTrain'] = np.mean(ml_model_pretrained.K_fold())
+
+        # Get modified set of data & create model
+        data_modified = getDataModified()
+        ml_model_modified, train_img_names_modified = createMLModel(data_modified)
+        session['confidence_modified'] = np.mean(ml_model_modified.K_fold())
+
+        # Prepare final results for user
         test_set = data.loc[session['test'], :]
         health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
-        return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+        return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), confidence_modified = "{:.2%}".format(round(session['confidence_modified'],4)), 
+                                            confidence_preTrain = "{:.2%}".format(round(session['confidence_preTrain'],4)), health_user = health_pic_user, 
+                                            blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), 
+                                            health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), 
+                                            healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), 
+                                            unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), 
+                                            h_prob = health_pic_prob, b_prob = blight_pic_prob)
 
 @app.route("/", methods=['GET'])
 @app.route("/index.html",methods=['GET'])
@@ -273,7 +350,7 @@ def label():
         user_defaults['kernel'] = request.form.get('kernel') #on/None
         user_defaults['c'] = request.form.get('c') #on/None
         user_defaults['gamma'] = request.form.get('gamma') #on/None
-        return initializeAL(form, .7, user_defaults)
+        return initializeAL(form, .1, user_defaults)
 
     elif session['queue'] == [] and session['labels'] == []: # Need more pictures
         return getNextSetOfImages(form, lowestPercentage)
