@@ -47,7 +47,7 @@ class ML_PreTrained:
 
         self.X = self.preprocess.fit_transform(self.X)
 
-        self.ml_model = pickle_file.best_estimator_.fit(self.X, self.y)      
+        self.ml_model = pickle_file.best_estimator_.fit(self.X, self.y)
 
     def GetKnownPredictions(self, new_data):
         """
