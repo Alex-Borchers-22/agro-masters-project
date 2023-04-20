@@ -1,6 +1,9 @@
 # Pre-trained pkl files
 *.pkl
 
+# Open-AI key
+app/gpt_config.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
