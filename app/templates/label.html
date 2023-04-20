@@ -11,7 +11,7 @@
 			<a href="index.html"><button
 					class="mb-2 mt-4 active_button">Home</button></a>
 		</div>
-		<div class="row">
+		<div class="row" id = 'ml_label_row'>
 			<div class="col-lg-10 col-xl-9 mx-auto">
 				<div class="card flex-row my-5 shadow rounded-lg border-0">
 					<div class="card-img-left d-none d-md-flex rounded-lg border-0">
@@ -35,9 +35,13 @@
 		</div>
 	</div>
 	<script>
+
     $(document).ready(function(){
     	$('[data-toggle="popover"]').popover();
+		$('#choice-0').prop('checked', false);
+		$('#choice-1').prop('checked', false);
     });
+	
     </script>
 </body>
 </html>

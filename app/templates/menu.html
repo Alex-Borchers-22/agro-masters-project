@@ -10,7 +10,8 @@
 			</div>
 			<div class="text-right">
 				<a href="index.html"><button
-						class="mb-2 mt-4 active_button">Home</button></a>
+						class="mb-2 mt-4 active_button"
+						form = ''>Home</button></a>
 			</div>
 			<div class="col-lg-10 custom-col-xl-9">
 				<div class="card flex-row my-5 shadow rounded-lg border-0">
@@ -78,7 +79,7 @@
 				<h1 class="font-weight-light pb-3 mb-2 mt-4">Hyperparameters</h1>
 			</div>
 			<div class="text-right">
-				<button class="mb-2 mt-4 active_button" onclick = 'go_to_step1()'>Go Back to MR Relations</button>
+				<button class="mb-2 mt-4 active_button" form = '' onclick = 'go_to_step1()'>Go Back to MR Relations</button>
 				<a href="index.html"><button
 						class="mb-2 mt-4 active_button">Home</button></a>
 			</div>
@@ -96,10 +97,10 @@
 								data-content="The kernel function is used to transform the input data into a higher dimensional space where it is easier to find a linear boundary between classes." data-html="true">
 								<span class="fas fa-bullhorn" style="font-size:24px"></span>
 							</a></h5>
-							<input name = 'kernel' type = 'radio' id = 'sigmoid' value = 'sigmoid' checked><label for = 'sigmoid'>Sigmoid</label> <br>
-							<input name = 'kernel' type = 'radio' id = 'rbf' value = 'rbf'><label for = 'rbf'>Radial Basis Function (RBF)</label><br>
-							<input name = 'kernel' type = 'radio' id = 'poly' value = 'poly'><label for = 'poly'>Polynomial</label><br>
+							<input name = 'kernel' type = 'radio' id = 'poly' value = 'poly' checked><label for = 'poly'>Polynomial</label><br>
 							<input name = 'kernel' type = 'radio' id = 'linear' value = 'linear'><label for = 'linear'>Linear</label><br>
+							<input name = 'kernel' type = 'radio' id = 'sigmoid' value = 'sigmoid'><label for = 'sigmoid'>Sigmoid</label> <br>
+							<input name = 'kernel' type = 'radio' id = 'rbf' value = 'rbf'><label for = 'rbf'>Radial Basis Function (RBF)</label><br>
 						</div>
 						<div class = 'card-radio-div'>
 							<h5>C<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" title="C" 
@@ -132,7 +133,33 @@
 				<input class="btn btn-lg btn-primary btn-block btn-start text-uppercase font-weight-bold mb-2 custom-label" type = 'button' value = "Go to Labeling" onclick = 'go_to_labeling()'>
 			</div>
 		</div>
-		<div class="loading-icon" id = "loading-icon" style = 'display:none'></div>
+		<div class="row" id = 'ml_tip_row' style = 'display:none; margin-top: 10em;'>
+			<div class="col-lg-10 col-xl-9 mx-auto">
+				<div class="card">
+					<div class = 'card-header' style = 'font-size:20px'>
+						We are gathering data and training a model. While you wait...
+					</div>
+					<div class="card-body">
+						<h4>Did you know? <button form = '' onclick = 'next_tip()' style = 'font-size:16px'>Next <i class="fa fa-arrow-right"></i></button></h4>
+						<p id = 'ml_tip'>Metamorphic testing (MT) is a property-based software testing technique, which can be an effective approach for addressing the test oracle problem and test case generation problem.</p>
+						<i>Ask GPT to expand on this topic</i><br>
+						<div class="btn-group" role="group" aria-label="Basic example">
+							<button form = '' type="button" class="btn btn-primary gpt_buttons" onclick = 'gpt_tip(this)'>Explain this further</button>
+							<button form = '' type="button" class="btn btn-primary gpt_buttons" onclick = 'gpt_tip(this)'>Provide an example of this</button>
+							<button form = '' type="button" class="btn btn-primary gpt_buttons" onclick = 'open_user_question()'>Ask your own question</button>
+						</div>
+						<div id = 'ml_gpt_user_question' style = 'display:none'>
+							<textarea id = 'ml_gpt_custom_question' class="form-control"></textarea>
+							<button form = '' type="button" class="btn btn-primary gpt_buttons" onclick = 'gpt_tip(this, true)'>Submit Question</button>
+						</div>
+						<div id = 'ml_gpt_response_div' style = 'display:none'>
+							<h3>GPT Response</h3>
+							<p id = 'ml_gpt_response'></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>		
 		<input type = 'submit' id = 'go_to_label_button' style = 'display:none'>
 	</form>
 	<script type = "text/javascript" src="{{ url_for('static',filename='js/mr_formats.js') }}"></script>
@@ -161,9 +188,106 @@
 	// Handles moving to labeling & showing wait icon while loading
 	function go_to_labeling(){
 		document.getElementById('step2').style.display = "none";
-		document.getElementById('loading-icon').style.display = "block";
+		document.getElementById('ml_tip_row').style.display = "block";
 		document.getElementById('go_to_label_button').click();
 	}
+
+	// Global for potential ml_tips
+	const ml_tips = [
+		"Metamorphic testing (MT) is a property-based software testing technique, which can be an effective approach for addressing the test oracle problem and test case generation problem.",
+		"MR Relation Tip 2",
+		"MR Relation Tip 3",
+		"MR Relation Tip 4",
+		"MR Relation Tip 5"
+	];
+
+	// Show next tip, hide GPT prompts & tips
+	function next_tip(){
+
+		// Find current tip
+		var index = ml_tips.indexOf($('#ml_tip').html());
+
+		// Choose random tip
+		if (index == ml_tips.length - 1)
+			$('#ml_tip').html(ml_tips[0]);
+		else
+			$('#ml_tip').html(ml_tips[index + 1]);
+
+		// Hide gpt_response
+		$('#ml_gpt_response_div').hide();
+		$('#ml_gpt_user_question').hide();
+	}
+
+	/**
+	 * Handles calling GPT API with prompt, returns GPTs response
+	 * @author Alex Borchers
+	 * @param {HTMLElement} button 		(<button> element clicked)
+	 * @param {Boolean}		is_custom 	(if this is a custom call or not)
+	 * @returns void 
+	 */
+	function gpt_tip(button, is_custom=false){
+
+		// Create GPT prompt
+		var prompt = button.innerHTML + ': "' + $('#ml_tip').html() + '"';
+
+		// If this is custom, overwrite with contents of textarea
+		if (is_custom)
+			prompt = $('#ml_gpt_custom_question').val()
+
+		// Add caveat to keep response quick
+		prompt += " (Limit this response 40 words or less)";
+
+		// Ajax call to web.py port /gpt
+		$.ajax({
+			type: "POST",
+			url: "/gpt",
+			data: { 'prompt': prompt },
+			success: function (data) {
+				$('#ml_gpt_response_div').show();
+				$('#ml_gpt_response').html(data.answer);
+			}
+		});
+	}
+
+	function open_user_question(){
+		// Show user option, pre-fill with current prompt
+		$('#ml_gpt_user_question').show();
+		$('#ml_gpt_custom_question').html('[User question]: "' + $('#ml_tip').html() + '"');
+
+		// Select 'user question' so user can edit right away
+		const textarea = document.getElementById("ml_gpt_custom_question");
+		textarea.focus();
+		textarea.setSelectionRange(0, 15);
+	}
+
+	// Handles before/after ajax call
+	$(document).ajaxStart(function () { 
+
+		// on ajax request (chat GPT request) disable buttons, set cursor to waiting
+		$( "body" ).addClass( "waiting_cursor" );
+		$( "html" ).addClass( "waiting_cursor" );
+		$( "input" ).addClass( "waiting_cursor" );
+		$( "button" ).addClass( "waiting_cursor" );
+		
+		// go through gpt buttons and disable
+		document.querySelectorAll('.gpt_buttons').forEach(function(a){
+			a.disabled = true;
+		})
+
+	});
+
+	$(document).ajaxStop(function () {
+
+		// remove any prior changes on ajax start
+		$( "html" ).removeClass( "waiting_cursor" );
+		$( "body" ).removeClass( "waiting_cursor" );
+		$( "input" ).removeClass( "waiting_cursor" );
+		$( "button" ).removeClass( "waiting_cursor" );
+
+		document.querySelectorAll('.gpt_buttons').forEach(function(a){
+			a.disabled = false;
+		})
+	});
 
 	// Set globals for canvas width & height
 	const c_width = 1200, c_height = 800;

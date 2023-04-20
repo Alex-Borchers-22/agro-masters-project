@@ -26,17 +26,31 @@ body {
   box-shadow: 0 5px #666;
   transform: translateY(4px);
 }
-.loading-icon {
-  border: 20px solid #f3f3f3;
-  border-top: 20px solid #4caf50;
-  border-radius: 50%;
-  width: 400px;
+
+.loading-bar {
+  width: 0%;
   height: 400px;
-  animation: spin 2s linear infinite;
-  margin: auto;
+  background-color: #4caf50;;
+  animation: loading 10s ease-in-out forwards;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes loading {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.ml_tip_title_big{
+  font-weight: bold;
+  font-size: 24px;
+}
+.ml_tip_title_small{
+  font-weight: bold;
+  font-size: 22px;
+}
+#ml_tip{
+  font-size: 22px;
 }

@@ -6,7 +6,8 @@ from flask import Flask
 from flask import render_template, flash, redirect, url_for, session, request, jsonify
 from app import app
 from app.DataPreprocessing import DataPreprocessing
-from app.ML_Class import Active_ML_Model, AL_Encoder, ML_Model
+from app.ML_Class import Active_ML_Model, AL_Encoder, ML_Model, ML_PreTrained
+from app.Image_Transform_Class import Image_MR
 from app.SamplingMethods import lowestPercentage
 from app.forms import LabelForm
 from flask_bootstrap import Bootstrap
@@ -19,19 +20,31 @@ import boto3
 from io import StringIO
 import csv
 from PIL import Image #to open images
-import pickle
+from app.gpt_api import generateChatResponse
+from app.gpt_api import mutateHyperParameters
+import time
 
-pickle_filename = "app/pre_trained_models/best_trained1.sav"
 bootstrap = Bootstrap(app)
 
-def getData():
+# Globals in use
+ml_model = None
+ml_model_pretrain = None
+ml_model_modified = None
+data_standard = None
+data_modified = None
+train_img_names = None
+test_set = None
+
+def getData(pretrain = False):
     """
-    Gets and returns the csvOut.csv as a DataFrame.
+    Gets bitmap of all images and returns as a DataFrame.
 
     Returns
     -------
-    data : Pandas DataFrame
-        The data that contains the features for each image.
+    data_standard : Pandas DataFrame
+        The data that contains the bitmap for each image (resized to 120x80)
+    data_modified : Pandas DataFrame
+        The data that contains the modified bitmap for each image (resized to 120x80).
     """
 
     # Loads in full csvOut data (name & classification)
@@ -43,35 +56,53 @@ def getData():
 
     # Initialize array for classification name & data
     bitmap = {}
+    bitmap_modified = {}
 
     # loop through files and get bit map for each (save as object where filename => bitmap for r,g,b)
     for index, file in enumerate(cls_full):
         
         # method found https://stackoverflow.com/questions/46385999/transform-an-image-to-a-bitmap
-        #img = Image.open(path + "\\" + file[0]).resize((120, 80))
-        #img = Image.open(path + "\\" + file[0]).resize((48, 36))
-        img = Image.open(path + "\\" + file[0]).resize((3, 2))
+        img = Image.open(path + "\\" + file[0]).resize((120, 80))
         
-        # set dictionary reference
+        # set dictionary reference for standard
         bitmap[file[0]] = np.array(img).reshape(-1)
+        
+        # set dictionary reference for modified
+        mr_img = Image_MR(img)
+        mr_img.modifyRGB(session['rgb_channel'])
+        mr_img.modifyByTransform(session['transform'])
+        #mr_img.modifyByInverting(session['invert_data'])
+        
+        # Must reshape before the rest of the operations (possible upgrade later on)
+        mr_img.reshapeBitmap()
+        mr_img.modifyByConstant(session['multiply_by_constant'])
+        mr_img.modifyByNormalizing(session['normalize_data'])
+       
+        # set dictionary reference
+        bitmap_modified[file[0]] = mr_img.image_data
 
     # convert dictionary to pandas data# Create a pandas DataFrame with image names as index and their bitmaps as values
     df = pd.DataFrame.from_dict(bitmap, orient='index')
+    df_modified = pd.DataFrame.from_dict(bitmap_modified, orient='index')
 
     # Set the column and index names
     df.index.name = 'Image Name'
     df.columns.name = 'Bitmap'
+    df_modified.index.name = 'Image Name'
+    df_modified.columns.name = 'Bitmap'
 
-    return df
+    return df, df_modified
 
-def createMLModel(data):
+def createMLModel(data, classifier = None):
     """
     Prepares the training set and creates a machine learning model using the training set.
 
     Parameters
     ----------
     data : Pandas DataFrame
-        The data that contains the features for each image
+        The data that contains the bitmap for each image
+    classifier : String
+        SVC classifier (if mutated)
 
     Returns
     -------
@@ -85,13 +116,38 @@ def createMLModel(data):
     train_set = data.loc[train_img_names, :]
     train_set['y_value'] = train_img_label
 
-    # get existing best trained model from stored pickle file
-    pre_trained = pickle.load(open(pickle_filename, 'rb'))
+    #ml_model = ML_Model(train_set, SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True), DataPreprocessing(False))
+    if classifier == None:
+        ml_model = ML_Model(train_set, SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True), DataPreprocessing(False))
+    else:
+        ml_model = ML_Model(train_set, eval(classifier), DataPreprocessing(False))
+
+    return ml_model, train_img_names
+
+def createPreTrainedModel(data):
+    """
+    Loads in best pre-trained model trained offline.
+
+    Parameters
+    ----------
+    data : Pandas DataFrame
+        The data that contains the bitmap for each image
+
+    Returns
+    -------
+    ml_model : ML_Model class object (loaded from Pickle, trained with GridSearchCV)
+        ml_model pre-trained offline.
+    train_img_names : String
+        The names of the images.
+    """
+
+    # session is a pair that holds image label and classification (user classified)
+    train_img_names, train_img_label = list(zip(*session['train']))
+    train_set = data.loc[train_img_names, :]
+    train_set['y_value'] = train_img_label
 
     #can replace RandomForestClassifier with some SVM
-    #ml_model = ML_Model(train_set, SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True), DataPreprocessing(True))
-    ml_model = ML_Model(train_set, SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True), DataPreprocessing(True))
-    #ml_model = ML_Model(train_set, pre_trained, DataPreprocessing(True))
+    ml_model = ML_PreTrained(train_set, DataPreprocessing(False))
 
     return ml_model, train_img_names
 
@@ -112,7 +168,7 @@ def renderLabel(form):
     queue = session['queue']
     img = queue.pop()
     session['queue'] = queue
-    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'], rgb_channel = session['rgb_channel'], multiply_by_constant = session['multiply_by_constant'], transform = session['transform'], normalize_data = session['normalize_data'])
+    return render_template(url_for('label'), form = form, picture = img, confidence = session['confidence'], rgb_channel = session['rgb_channel'], multiply_by_constant = session['multiply_by_constant'], transform = session['transform'], normalize_data = session['normalize_data'], remaining = len(queue))
 
 def initializeAL(form, confidence_break, user_defaults):
     """
@@ -133,6 +189,10 @@ def initializeAL(form, confidence_break, user_defaults):
         renders the label.html webpage.
     """
 
+    # identify globals to use
+    global data_standard
+    global data_modified
+
     # set metamorphic relation user selections
     session['rgb_channel'] = format(user_defaults['rgb_channel'])
     session['multiply_by_constant'] = format(user_defaults['multiply_by_constant'])
@@ -144,16 +204,13 @@ def initializeAL(form, confidence_break, user_defaults):
     session['c'] = format(user_defaults['c'])
     session['gamma'] = format(user_defaults['gamma'])
 
-    # get existing best trained model from stored pickle file
-    pre_trained = pickle.load(open(pickle_filename, 'rb'))
-
-    #ml_classifier = SVC(kernel="poly", C=0.1, degree=2, coef0=0, gamma="scale", probability=True)
     ml_classifier = SVC(kernel=session['kernel'], C=float(session['c']), gamma=session['gamma'], probability=True)
-    #ml_classifier = pre_trained
-    data = getData()
-    al_model = Active_ML_Model(data, ml_classifier, DataPreprocessing(True)) 
+    data_standard, data_modified = getData()
+    al_model = Active_ML_Model(data_standard, ml_classifier, DataPreprocessing(False)) 
 
     session['confidence'] = 0
+    session['confidence_preTrain'] = 0
+    session['confidence_modified'] = 0
     session['confidence_break'] = confidence_break
     session['labels'] = []
     session['sample_idx'] = list(al_model.sample.index.values)
@@ -162,6 +219,11 @@ def initializeAL(form, confidence_break, user_defaults):
     session['model'] = True
     session['queue'] = list(al_model.sample.index.values)
 
+    # TESTING
+     #for sample in session['sample_idx']:
+    #session['labels'] = ["B", "B", "B", "B", "B", "H", "H", "H", "H", "H"]
+    #return prepairResults(form) 
+    
     return renderLabel(form)
 
 def getNextSetOfImages(form, sampling_method):
@@ -180,9 +242,9 @@ def getNextSetOfImages(form, sampling_method):
     render_template : flask function
         renders the label.html webpage.
     """
-    data = getData()
-    ml_model, train_img_names = createMLModel(data)
-    test_set = data[data.index.isin(train_img_names) == False]
+    global data_standard
+    ml_model, train_img_names = createMLModel(data_standard)
+    test_set = data_standard[data_standard.index.isin(train_img_names) == False]
 
     session['sample_idx'], session['test'] = sampling_method(ml_model, test_set, 5)
     session['queue'] = session['sample_idx'].copy()
@@ -203,6 +265,21 @@ def prepairResults(form):
     render_template : flask function
         renders the appropriate webpage based on new confidence score.
     """
+
+    # Include globals needed in this function
+    global ml_model
+    global ml_model_pretrain
+    global ml_model_modified
+    global train_img_names
+    global test_set
+    global data_standard
+    global data_modified
+
+    # TEST VARIABLES
+    #session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
+    #session['train'] = session['sample']
+    #session['queue'] = []
+
     session['labels'].append(form.choice.data)
     session['sample'] = tuple(zip(session['sample_idx'], session['labels']))
 
@@ -211,8 +288,8 @@ def prepairResults(form):
     else:
         session['train'] = session['sample']
 
-    data = getData()
-    ml_model, train_img_names = createMLModel(data)
+    # Get regular set of data, & create model
+    ml_model, train_img_names = createMLModel(data_standard)
 
     session['confidence'] = np.mean(ml_model.K_fold())
     session['labels'] = []
@@ -221,9 +298,37 @@ def prepairResults(form):
         health_pic, blight_pic = ml_model.infoForProgress(train_img_names)
         return render_template('intermediate.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic, blight_user = blight_pic, healthNum_user = len(health_pic), blightNum_user = len(blight_pic))
     else:
-        test_set = data.loc[session['test'], :]
+
+        # get test set of images
+        test_set = data_standard.loc[session['test'], :]
+        
+        # Get pre-trained model
+        ml_model_pretrain, train_img_names_pretrain = createPreTrainedModel(data_standard)
+        session['confidence_preTrain'] = np.mean(ml_model_pretrain.K_fold())
+        #session['confidence_preTrain'] = ml_model_pretrain.infoForResults(train_img_names_pretrain, test_set)  #actual just info for results
+
+        # Get modified set of data & create model
+        ml_model_modified, train_img_names_modified = createMLModel(data_modified)
+        session['confidence_modified'] = np.mean(ml_model_modified.K_fold())
+
+        # Push new values to class list and confidence list
+        ml_model.class_list.append(str(ml_model.ml_model))
+        ml_model_pretrain.class_list.append(str(ml_model_pretrain.ml_model))
+        ml_model_modified.class_list.append(str(ml_model_modified.ml_model))
+        ml_model.confidence_list.append(session['confidence'])
+        ml_model_pretrain.confidence_list.append(session['confidence_modified'])
+        ml_model_modified.confidence_list.append(session['confidence_preTrain'])
+
+        # Prepare final results for user
         health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
-        return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), health_user = health_pic_user, blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), healthyPct = "{:.2%}".format(len(health_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), unhealthyPct = "{:.2%}".format(len(blight_pic)/(200-(len(health_pic_user)+len(blight_pic_user)))), h_prob = health_pic_prob, b_prob = blight_pic_prob)
+        #health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model_pretrain.infoForResults(train_img_names_pretrain, test_set)
+        return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), confidence_modified = "{:.2%}".format(round(session['confidence_modified'],4)), 
+                                            confidence_preTrain = "{:.2%}".format(round(session['confidence_preTrain'],4)), health_user = health_pic_user, 
+                                            blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), 
+                                            health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), 
+                                            healthyPct = "{:.2%}".format(len(health_pic)/(177-(len(health_pic_user)+len(blight_pic_user)))), 
+                                            unhealthyPct = "{:.2%}".format(len(blight_pic)/(177-(len(health_pic_user)+len(blight_pic_user)))), 
+                                            h_prob = health_pic_prob, b_prob = blight_pic_prob)
 
 @app.route("/", methods=['GET'])
 @app.route("/index.html",methods=['GET'])
@@ -233,6 +338,17 @@ def home():
     """
     session.pop('model', None)
     return render_template('index.html')
+
+@app.route("/gpt",methods=['POST'])
+def test():
+    """
+    Operates the GPT requests
+    """    
+    time.sleep(2)
+    prompt = request.form['prompt']
+    res = {}
+    res['answer'] = generateChatResponse(prompt)
+    return jsonify(res), 200
 
 @app.route("/menu.html",methods=['GET', 'POST'])
 def menu():
@@ -273,7 +389,7 @@ def label():
         user_defaults['kernel'] = request.form.get('kernel') #on/None
         user_defaults['c'] = request.form.get('c') #on/None
         user_defaults['gamma'] = request.form.get('gamma') #on/None
-        return initializeAL(form, .7, user_defaults)
+        return initializeAL(form, .1, user_defaults)
 
     elif session['queue'] == [] and session['labels'] == []: # Need more pictures
         return getNextSetOfImages(form, lowestPercentage)
@@ -294,12 +410,55 @@ def intermediate():
     """
     return render_template('intermediate.html')
 
-@app.route("/final.html",methods=['GET'])
+@app.route("/final.html",methods=['POST'])
 def final():
     """
     Operates the final(final.html) web page.
     """
-    return render_template('final.html')
+    form = LabelForm()
+    global ml_model
+    global ml_model_pretrain
+    global ml_model_modified
+    global train_img_names
+    global test_set     
+    global data_standard
+    global data_modified   
+
+    # Make call to chat GPT to create mutation of hyperparameters
+    ml_model = mutateHyperParameters(ml_model)
+    #ml_model_pretrain = mutateHyperParameters(ml_model_pretrain)
+    ml_model_modified = mutateHyperParameters(ml_model_modified)
+
+    # Re-train class?
+    #ml_model, train_img_names_modified = createMLModel(data_modified, str(ml_model.ml_model))
+    #ml_model_modified, train_img_names_modified = createMLModel(data_modified, str(ml_model_modified.ml_model))
+
+    # Re-run confidence levels & final results
+    session['confidence'] = np.mean(ml_model.K_fold())
+    session['confidence_modified'] = np.mean(ml_model_modified.K_fold())
+    session['confidence_preTrain'] = np.mean(ml_model_pretrain.K_fold())
+
+    # Push new values to class list and confidence list
+    ml_model.class_list.append(str(ml_model.ml_model))
+    ml_model_pretrain.class_list.append(str(ml_model_pretrain.ml_model))
+    ml_model_modified.class_list.append(str(ml_model_modified.ml_model))
+    ml_model.confidence_list.append(session['confidence'])
+    ml_model_pretrain.confidence_list.append(session['confidence_modified'])
+    ml_model_modified.confidence_list.append(session['confidence_preTrain'])
+
+    print(ml_model.class_list)
+
+    #session['confidence_preTrain'] = ml_model_pretrain.infoForResults(train_img_names_pretrain, test_set)  #actual just info for results
+    health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model.infoForResults(train_img_names, test_set)
+    #health_pic_user, blight_pic_user, health_pic, blight_pic, health_pic_prob, blight_pic_prob = ml_model_pretrain.infoForResults(train_img_names_pretrain, test_set)
+
+    return render_template('final.html', form = form, confidence = "{:.2%}".format(round(session['confidence'],4)), confidence_modified = "{:.2%}".format(round(session['confidence_modified'],4)), 
+                                        confidence_preTrain = "{:.2%}".format(round(session['confidence_preTrain'],4)), health_user = health_pic_user, 
+                                        blight_user = blight_pic_user, healthNum_user = len(health_pic_user), blightNum_user = len(blight_pic_user), 
+                                        health_test = health_pic, unhealth_test = blight_pic, healthyNum = len(health_pic), unhealthyNum = len(blight_pic), 
+                                        healthyPct = "{:.2%}".format(len(health_pic)/(177-(len(health_pic_user)+len(blight_pic_user)))), 
+                                        unhealthyPct = "{:.2%}".format(len(blight_pic)/(177-(len(health_pic_user)+len(blight_pic_user)))), 
+                                        h_prob = health_pic_prob, b_prob = blight_pic_prob)
 
 @app.route("/feedback/<h_list>/<u_list>/<h_conf_list>/<u_conf_list>",methods=['GET'])
 def feedback(h_list,u_list,h_conf_list,u_conf_list):

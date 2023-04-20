@@ -19,6 +19,11 @@
             <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The confidence level is based on the average of cross-validation. &quot;More specifically the labeled images are split into three equal size sets of images. Each set of images is predicted based on the other two sets of images. The accuracy of the model's ability to predict each set of images is averaged giving the confidence value.&quot;">
                             <span class="fa fa-info-circle" style="font-size:24px"></span></h5></a>
             {% endif %}
+			<h5 class="font-weight-normal">Modified Confidence: {{confidence_modified}}</h5>
+			<h5 class="font-weight-normal">Pre-Trained Confidence: {{confidence_preTrain}}</h5>
+			<form action="final.html" method="post">
+				<input type = 'submit' value = 'Generate ML Mutations'>
+			</form>
 		</div>
         <div class="container">
 
@@ -70,7 +75,7 @@
 		</div>
 		<div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy Test(Machine): {{healthyNum}} ({{healthyPct}})
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy Test (Machine): {{healthyNum}} ({{healthyPct}})
 			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Healthy&quot; images in the image set of predicting results">
                 <span class="fa fa-info-circle" style="font-size:24px"></span></a>
 			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size">
@@ -100,7 +105,7 @@
 
 		<div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy Test(Machine): {{unhealthyNum}} ({{unhealthyPct}})
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy Test (Machine): {{unhealthyNum}} ({{unhealthyPct}})
 			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Unhealthy&quot; images in the image set of predicting results">
                             <span class="fa fa-info-circle" style="font-size:24px"></span></a>
 			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a></h5>

@@ -60,17 +60,21 @@ body {
   width: 66em !important;
   margin: 0 auto !important;
 }
-.loading-icon {
-  border: 20px solid #f3f3f3;
-  border-top: 20px solid #4caf50;
-  border-radius: 50%;
-  width: 400px;
-  height: 400px;
-  animation: spin 2s linear infinite;
-  margin: auto;
-}
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.ml_tip_title_big{
+  font-weight: bold;
+  font-size: 24px;
+}
+.ml_tip_title_small{
+  font-weight: bold;
+  font-size: 22px;
+}
+#ml_tip{
+  font-size: 22px;
+}
+.btn-group button{
+  background-color: #b6f0c9;
+}
+.waiting_cursor{
+  cursor: wait;
 }
