@@ -90,7 +90,7 @@ function reformat_by_constant(ctx, imageData, constant) {
  * @returns {HTMLElement} newly formatted canvas object
  * 
 */
-function reformat_by_transform(ctx, imageData, transform) {
+function reformat_by_transform(ctx, imageData, transform, update_img) {
 
     // Get the image data from the canvas
     var data = imageData.data;
@@ -114,7 +114,7 @@ function reformat_by_transform(ctx, imageData, transform) {
             data = imageData.data;
 
             // Adjust object position so overlay is hidden
-            document.getElementById('modified_image').style.objectPosition = "-100% 0";
+            update_img.style.objectPosition = "-100% 0";
 
             break;
         case 'rotate180':
@@ -128,7 +128,7 @@ function reformat_by_transform(ctx, imageData, transform) {
             data = imageData.data;
 
             // Adjust object position so overlay is hidden
-            document.getElementById('modified_image').style.objectPosition = "";
+            update_img.style.objectPosition = "";
 
             break;
         case 'rotate270':
@@ -142,7 +142,7 @@ function reformat_by_transform(ctx, imageData, transform) {
             data = imageData.data;
 
             // Adjust object position so overlay is hidden
-            document.getElementById('modified_image').style.objectPosition = "-100% 0";
+            update_img.style.objectPosition = "-100% 0";
 
             break;
         case 'mirror':
@@ -156,11 +156,11 @@ function reformat_by_transform(ctx, imageData, transform) {
             data = imageData.data;
 
             // Adjust object position so overlay is hidden
-            document.getElementById('modified_image').style.objectPosition = "";
+            update_img.style.objectPosition = "";
 
             break;
         default:
-            document.getElementById('modified_image').style.objectPosition = "";
+            update_img.style.objectPosition = "";
             break;
     }
 
@@ -209,9 +209,14 @@ function reformat_by_normalizing_data(ctx, imageData) {
 */
 function reformat_by_inverting_data(ctx, imageData) {
 
-    // Modify the channels multiplying by a constant
-    for (let i = 0; i < imageData.data.length; i++) {
-        imageData.data[i] = 255 - imageData.data[i];
+    // Get the image data from the canvas
+    var data = imageData.data;
+
+    // Modify the input channel by changing to new assignments
+    for (var i = 0; i < data.length; i+=4) {
+        data[i] = 255 - data[i];       // red
+        data[i + 1] = 255 - data[i + 1]; // green
+        data[i + 2] = 255 - data[i + 2]; // blue
     }
 
     // Put the modified image data back onto the canvas
@@ -219,6 +224,68 @@ function reformat_by_inverting_data(ctx, imageData) {
 
     // Return modified object
     return ctx;
+
+}
+
+/**
+ * Handles reformating image by permutating image data
+ * @author Alex Borchers
+ * @param {HTMLElement} ctx (canvas object)
+ * @param {HTMLElement} imageData (canvas object)
+ * @returns {HTMLElement} newly formatted canvas object
+ * 
+*/
+function reformat_by_permutation(ctx, imageData) {
+
+    // Get the image data from the canvas
+    var data = imageData.data;
+
+    // Get # of potential input channels (divide total by 3)
+    var pot_channels = data.length / 3;
+
+    // Create original index of array
+    var indexes = [];
+    for (var i = 0; i < pot_channels; i++){
+        indexes.push(i);
+    }
+
+    console.log(pot_channels)
+
+    // Randomly shuffle array
+    indexes = shuffle_array(indexes)
+
+    // Modify the input channel by changing to new assignments
+    for (var i = 0; i < indexes.length; i++) {
+        data[3*indexes[i]] = data[3*i];
+        data[3*indexes[i] + 1] = data[3*i + 1];
+        data[3*indexes[i] + 2] = data[3*i + 2];
+    }
+
+    // Put the modified image data back onto the canvas
+    ctx.putImageData(imageData, 0, 0);
+
+    // Return modified object
+    return ctx;
+}
+
+// Handles randomly shuffling an array 
+// https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+function shuffle_array(array) {
+    let currentIndex = array.length,  randomIndex;
+
+    // While there remain elements to shuffle.
+    while (currentIndex != 0) {
+
+        // Pick a remaining element.
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        // And swap it with the current element.
+        [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+
+    return array;
 }
 
 // Source https://stackoverflow.com/questions/7343890/standard-deviation-javascript 

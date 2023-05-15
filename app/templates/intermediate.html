@@ -15,12 +15,17 @@
             <br><br>
 			<h5 class="font-weight-normal">Confidence: {{confidence}}
 			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The value of confidence represents how well the AI can predict the currently labeled images.">
-                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5></a>
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></a></h5>
+			<h5 class="font-weight-normal">User Accuracy: {{ "{:.0%}".format(user_accuracy) }}
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The number of classifications that the user has made correctly.">
+					<span class="fa fa-info-circle" style="font-size:24px"></span>
+				</a>
+			</h5>
 
 		</div>
         <div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy(User):
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy (User):
 				{{healthNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
             </h5>
 
@@ -44,7 +49,7 @@
 		</div>
 		<div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy(User):
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy (User):
 				{{blightNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
             </h5>
 

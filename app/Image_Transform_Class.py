@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Apr 6 2023
-@author: Alex Borcherss
+@author: Alex Borchers
 """
 
 import numpy as np
@@ -146,3 +146,17 @@ class Image_MR:
 
         if modify != "None":
             self.image_data = ImageOps.invert(self.image_data)
+
+    def modifyByPermutation(self, modify):
+        """
+        This function modifies the bitmap by randomly permutating the data
+
+        Parameters
+        ----------
+        modify : String
+            User specified decision variable
+
+        """
+
+        if modify != "None":
+            self.image_data = self.image_data

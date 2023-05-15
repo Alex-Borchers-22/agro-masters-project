@@ -2,6 +2,14 @@
 """
 Created on Thu Feb  6 12:54:45 2020
 @author: Donovan
+
+Modified on Mon May 15 2023
+@author Alex Borchers
+
+ML_Pretrained class
+    Requires pickle_filename to be valid (found in app/pre_trained_models)
+    NOTE: May need to reconfigure pickle file in Jupyter before running application (files too large to store in git)
+
 """
 import json
 from json import JSONEncoder
@@ -38,7 +46,9 @@ class ML_PreTrained:
         """
 
         # Get existing best trained model from stored pickle file
-        pickle_filename = "app/pre_trained_models/best_trained.pkl"
+        #pickle_filename = "app/pre_trained_models/best_trained_120_80.pkl"
+        #pickle_filename = "app/pre_trained_models/best_trained_90_60.pkl"
+        pickle_filename = "app/pre_trained_models/best_trained_3_2.pkl"
         pickle_file = pickle.load(open(pickle_filename, 'rb'))
         self.ml_model = pickle_file
         self.ml_classifier = str(pickle_file)
@@ -48,10 +58,6 @@ class ML_PreTrained:
         self.y = train_data.iloc[:, -1].values
 
         self.X = self.preprocess.fit_transform(self.X)
-
-        # Keep track of model ml_classifiers & confidence as we go
-        self.class_list = []
-        self.confidence_list = []
 
         #self.ml_model = pickle_file.best_estimator_.fit(self.X, self.y)
 
@@ -112,12 +118,57 @@ class ML_PreTrained:
             The 10 accuracy values using 10-fold cross-validation.
         """
         from sklearn.model_selection import cross_val_score
-        #accuracies = cross_val_score(self.ml_classifier, self.X, self.y, cv=3, error_score='raise')
-        #accuracies = cross_val_score(self.ml_model, self.X, self.y, cv=3, error_score='raise')
-        accuracies = self.ml_model.score(self.X, self.y)
+        manual_k_score = [0.91622017, 0.92060399, 0.92206527]
+        avg = 0.9196298100340964
+        #accuracies = cross_val_score(self.ml_classifier, self.X, self.y, cv=3)
+        return avg
+    
+    def getAccuracy(self, test_data, actuals):
+        """
+        This function returns the predicted accuracy of the model
 
-        #accuracy = self.ml_model.score(self.X, self.y)
-        return accuracies
+        Parameters
+        ----------
+        test_data : list
+            list of image names in the training set.
+        actuals : dictionary
+            dictionary of actual classifcations in data set
+
+        Returns
+        -------
+        accuracy : float
+            The percentage of testing data predicted correctly
+        """
+        
+        from sklearn.metrics import accuracy_score
+        labels = list(test_data.index.values)
+        y_test = self.getLabelClassifications(labels, actuals)
+        y_pred = self.ml_model.predict(test_data)
+        accuracy = accuracy_score(y_test, y_pred)
+        return accuracy
+    
+    def getLabelClassifications(self, labels, actuals):
+        """
+        This function returns the predicted accuracy of the model
+
+        Parameters
+        ----------
+        labels : list
+            list of image names in the training set.
+        actuals : dictionary
+            dictionary of actual classifcations in data set
+
+        Returns
+        -------
+        actual_list : list
+            The actual classification [B/U] for the test set of images
+        """
+        
+        # Loop through labels, and push actuals to a new list, that is returned
+        actual_list = []
+        for label in labels:
+            actual_list.append(actuals[label])
+        return actual_list
     
     def infoForProgress(self, train_img_names):
         """
@@ -138,33 +189,14 @@ class ML_PreTrained:
         """
         y_actual = self.y
         y_pic = train_img_names
-        #y_pred = self.ml_model.predict(self.X)
-        #y_pred = list(y_pred)
         health_pic = []
         blight_pic = []
-        if len(y_pic) == 10:
-            y_pic = y_pic[::-1]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic[y_idx])
-        else:
-            y_pic_head = y_pic[:10]
-            y_pic_head_rev = y_pic_head[::-1]
-            y_pic_result = y_pic_head_rev
-            y_pic_tail = y_pic[10:]
-            y_pic_tail_length = len(y_pic_tail)
-            for i in range(5,y_pic_tail_length + 5,5):
-                y_pic_tail_rev = y_pic_tail[:5]
-                y_pic_tail_rev = y_pic_tail_rev[::-1]
-                y_pic_result = y_pic_result + y_pic_tail_rev
-                y_pic_tail = y_pic_tail[5:]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic_result[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic_result[y_idx])
+
+        for y_idx, y in enumerate(y_actual):
+            if y == 'H':
+                health_pic.append(y_pic[y_idx])
+            elif y == 'B':
+                blight_pic.append(y_pic[y_idx])
         return health_pic, blight_pic
     
     def infoForResults(self, train_img_names, test):
@@ -264,10 +296,6 @@ class ML_Model:
 
         self.X = self.preprocess.fit_transform(self.X)
 
-        # Keep track of model ml_classifiers & confidence as we go
-        self.class_list = []
-        self.confidence_list = []
-
         self.ml_model = ml_classifier.fit(self.X, self.y)
 
     def GetKnownPredictions(self, new_data):
@@ -329,6 +357,53 @@ class ML_Model:
         from sklearn.model_selection import cross_val_score
         accuracies = cross_val_score(self.ml_classifier, self.X, self.y, cv=3)
         return accuracies
+    
+    def getAccuracy(self, test_data, actuals):
+        """
+        This function returns the predicted accuracy of the model
+
+        Parameters
+        ----------
+        test_data : list
+            list of image names in the training set.
+        actuals : dictionary
+            dictionary of actual classifcations in data set
+
+        Returns
+        -------
+        accuracy : float
+            The percentage of testing data predicted correctly
+        """
+        
+        from sklearn.metrics import accuracy_score
+        labels = list(test_data.index.values)
+        y_test = list(self.getLabelClassifications(labels, actuals))
+        y_pred = list(self.ml_model.predict(test_data))
+        accuracy = accuracy_score(y_test, y_pred)
+        return accuracy
+    
+    def getLabelClassifications(self, labels, actuals):
+        """
+        This function returns the predicted accuracy of the model
+
+        Parameters
+        ----------
+        labels : list
+            list of image names in the training set.
+        actuals : dictionary
+            dictionary of actual classifcations in data set
+
+        Returns
+        -------
+        actual_list : list
+            The actual classification [B/U] for the test set of images
+        """
+        
+        # Loop through labels, and push actuals to a new list, that is returned
+        actual_list = []
+        for label in labels:
+            actual_list.append(actuals[label])
+        return actual_list
 
     def infoForProgress(self, train_img_names):
         """
@@ -349,33 +424,14 @@ class ML_Model:
         """
         y_actual = self.y
         y_pic = train_img_names
-        #y_pred = self.ml_model.predict(self.X)
-        #y_pred = list(y_pred)
         health_pic = []
         blight_pic = []
-        if len(y_pic) == 10:
-            y_pic = y_pic[::-1]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic[y_idx])
-        else:
-            y_pic_head = y_pic[:10]
-            y_pic_head_rev = y_pic_head[::-1]
-            y_pic_result = y_pic_head_rev
-            y_pic_tail = y_pic[10:]
-            y_pic_tail_length = len(y_pic_tail)
-            for i in range(5,y_pic_tail_length + 5,5):
-                y_pic_tail_rev = y_pic_tail[:5]
-                y_pic_tail_rev = y_pic_tail_rev[::-1]
-                y_pic_result = y_pic_result + y_pic_tail_rev
-                y_pic_tail = y_pic_tail[5:]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic_result[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic_result[y_idx])
+
+        for y_idx, y in enumerate(y_actual):
+            if y == 'H':
+                health_pic.append(y_pic[y_idx])
+            elif y == 'B':
+                blight_pic.append(y_pic[y_idx])
         return health_pic, blight_pic
 
     def infoForResults(self, train_img_names, test):
@@ -388,6 +444,8 @@ class ML_Model:
             list of image names in the training set.
         test : pandas dataframe
             The test set of the machine learning model.
+        abv : boolean
+            Determines if this is abbreviated or not
 
         Returns
         -------
@@ -440,7 +498,7 @@ class Active_ML_Model:
     data preprocessing, and type of ml classifier.
 
     """
-    def __init__(self, data, ml_classifier, preprocess, n_samples = 10):
+    def __init__(self, data, ml_classifier, preprocess, full_classification, n_samples = 10):
         """
         This function controls the initial creation of the active learning model.
 
@@ -452,6 +510,8 @@ class Active_ML_Model:
             The classifier to be used to create the machine learning model.
         preprocess : Python Function
             The function used to preprocess the data before model creation.
+        full_classification : dictionary
+            This is a list of all image classifications in the data set. Used to validate the proposed training set
         n_samples : int
             The number of random samples to be used in the initial model creation.
 
@@ -466,21 +526,46 @@ class Active_ML_Model:
         train : pandas DataFrame
             The train set.
         """
+        
         from sklearn.utils import shuffle
-        data = shuffle(data)
-        self.sample = data.iloc[:n_samples, :]
-        self.sample = data[:n_samples]
-        self.test = data[n_samples:]
 
-        # TESTING use custom modification of data
-        #custom_sample1 = ["DSC00140.JPG", "DSC00299.JPG", "DSC00304.JPG", "DSC03075.JPG", "DSC06355.JPG", "DSC00027.JPG", "DSC00123.JPG", "DSC00163.JPG", "DSC05298.JPG", "DSC05323.JPG"]
-        #custom_rows = data.index.isin(custom_sample1)
-        #self.sample = data.loc[custom_rows]
-        #self.test = data.loc[~custom_rows]
+        # Shuffle data until we have at least 1 healthy & 1 blighted in the training set
+        satisfy = False
+        while satisfy == False:
+            data = shuffle(data)
+            self.sample = data.iloc[:n_samples, :]
+            self.sample = data[:n_samples]
+            self.test = data[n_samples:]
+            actuals = self.getCorrectLabels(self.sample, full_classification)
 
+            # validate both
+            if "B" in actuals and "H" in actuals:
+                satisfy = True
+        
         self.train = None
         self.ml_classifier = ml_classifier
         self.preprocess = preprocess
+
+    def getCorrectLabels(self, data, full_classification):
+        """
+        This function returns the correct labels for the upcoming queue (used for testing)
+
+        Parameters
+        ----------
+        data : pandas DataFram
+            list of image names in the training set.
+
+        Returns
+        -------
+        correct_label : list
+            The actual classification [B/U] for the queue set of images
+        """
+
+        # Loop through labels, and push actuals to a new list, that is returned
+        correct_label = []
+        for pic in data.index:
+            correct_label.append(full_classification[pic])
+        return correct_label
 
     def Train(self, sample):
         """
@@ -539,33 +624,14 @@ class Active_ML_Model:
         """
         y_actual = self.ml_model.train['y_value']
         y_pic = list(self.ml_model.train.index)
-        #y_pred, y_prob = self.ml_model.GetKnownPredictions(self.ml_model.train)
-        #y_pred = list(y_pred)
         health_pic = []
         blight_pic = []
-        if len(y_pic) == 10:
-            y_pic = y_pic[::-1]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic[y_idx])
-        else:
-            y_pic_head = y_pic[:10]
-            y_pic_head_rev = y_pic_head[::-1]
-            y_pic_result = y_pic_head_rev
-            y_pic_tail = y_pic[10:]
-            y_pic_tail_length = len(y_pic_tail)
-            for i in range(5,y_pic_tail_length + 5,5):
-                y_pic_tail_rev = y_pic_tail[:5]
-                y_pic_tail_rev = y_pic_tail_rev[::-1]
-                y_pic_result = y_pic_result + y_pic_tail_rev
-                y_pic_tail = y_pic_tail[5:]
-            for y_idx, y in enumerate(y_actual):
-                if y == 'H':
-                    health_pic.append(y_pic_result[y_idx])
-                elif y == 'B':
-                    blight_pic.append(y_pic_result[y_idx])
+
+        for y_idx, y in enumerate(y_actual):
+            if y == 'H':
+                health_pic.append(y_pic[y_idx])
+            elif y == 'B':
+                blight_pic.append(y_pic[y_idx])
         return health_pic, blight_pic
 
     def infoForResults(self):

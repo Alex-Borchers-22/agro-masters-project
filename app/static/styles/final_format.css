@@ -1,4 +1,4 @@
-.modal {
+.image_modal {
     display: none;
     position: fixed;
     z-index: 1;
@@ -13,18 +13,21 @@
 }
 
 
-.modal-content {
+.modal-content-custom {
     margin: auto;
     display: block;
-    width: 80%;
     max-width: 700px;
 }
 
-.modal-content {
+.modal-content, .modal-content-custom {
     -webkit-animation-name: zoom;
     -webkit-animation-duration: 0.6s;
     animation-name: zoom;
     animation-duration: 0.6s;
+}
+
+.modal-dialog{
+    max-width: 58em !important;
 }
 
 @-webkit-keyframes zoom {
@@ -73,4 +76,49 @@
     color: #bbb;
     text-decoration: none;
     cursor: pointer;
+}
+
+.highlight_region{
+    background-color: yellow;
+}
+
+.custom-select{
+    width: 11em;
+    cursor: pointer;
+}
+.refresh_button{
+    color: white;
+    padding: 2px 9px;
+    background: #4285f4;
+    border: 0px;
+    font-size: 22px;
+}
+.header-btn-primary{
+    width:22em;
+}
+/*overwrite some bootstrap styling*/
+.btn-primary:not([disabled]):not(.disabled):active, .btn-primary:not([disabled]):not(.disabled).active, .show>.btn-primary.dropdown-toggle {
+    background-color: #4285f4 !important;
+}
+.dropdown-item:hover{
+    background-color: #c8c8c8;
+}
+.img-sample{
+    width: 450px;
+}
+.img-sample-div{
+    float:left;
+    margin: 1.5em 1em;
+    text-align: left;
+}
+.table-custom{
+    width: 29rem;
+    float: right;
+    /* clear: both; */
+    margin-top: -1em;
+    margin-bottom: 2em;
+    padding: 1em !important;
+}
+.fa-info-circle{
+    color: #007bff !important;
 }

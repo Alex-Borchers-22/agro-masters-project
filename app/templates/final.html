@@ -1,33 +1,113 @@
 {% extends "base.html" %}
 {% block content %}
 <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/final_format.css') }}">
+<head>
+	<style>
+		body.wait * {
+		cursor: wait !important;
+		}
+	</style>
+</head>
 <body>
 	<div class="container">
 		<div class="row border-bottom">
-			<h1 class="font-weight-light pb-3 mb-2 mt-4">Final
-				Results <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Based on what you labeled, here are some images that AI identified as &quot;Healthy&quot; or &quot;Unhealthy&quot;">
-                            <span class="fa fa-info-circle" style="font-size:24px"></span></h1>
+			<h1 class="font-weight-light pb-3 mb-2 mt-4">Final Results 
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Based on what you labeled, here are some images that AI identified as &quot;Healthy&quot; or &quot;Unhealthy&quot;">
+                <span class="fa fa-info-circle" style="font-size:24px"></span>
+				</a>
+			</h1>
+			<form action="final.html" method="post" id = 'update_results_form' style = 'margin-left: 463px;margin-top: 31px;width: 26em;'>
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="See the results for other models by selecting the type of model from the drop-down.">
+					<span class="fa fa-info-circle" style="font-size:24px;float: left;margin: 4px 5px 6px 6px;"></span></h5></a>
+				<h4>Results Listed For: 
+					<select name = 'model_type' class="custom-select" onchange = 'submit_form()'>
+						{% for option in result_options %}
+							{% if option == model_type %}
+								<option value="{{ option }}" selected>{{ option }}</option>
+							{% else %}
+								<option value="{{ option }}">{{ option }}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+					<!-- <button class="btn refresh_button" id = 'submit_form_button' type = 'submit'><i class="fa fa-refresh" aria-hidden="true"></i></button> -->
+				</h4>
+			</form>
 		</div>
 		<div class="text-right">
-			<a href="index.html"><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button></a>
+			{% if model_type == "Modified" %}
+			<div class = "img-sample-div">
+				<h4>Modified Image Example:</h4>
+				<img id = 'modified_image' 
+					class="img-fluid img-rounded img-sample"
+					src="{{ url_for('static',filename='images/' + health_user[0]) }}"
+					alt="">
+			</div>
+				
+			{% endif %}
+
+			<a href="index.html" style = 'float:right;'><button class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Go back to the home page and restart training">Home</button></a>
+			<form action = 'label.html' method = 'post'>
+				<button type = "submit" class="mb-2 mt-4 active_button" data-toggle="tooltip" data-placement="left" title="Continue Training the Model" style = 'margin-right: 10px;'>Train More Images</button>
+			</form>
 			<br><br>
-			<h5 class="font-weight-normal">Confidence: {{confidence}}
-			{% if confidence == 1 %}
-			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This confidence level indicates you missed all labels or you gave the same label for all training images.">
-                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5></a>
-            {% else %}
-            <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The confidence level is based on the average of cross-validation. &quot;More specifically the labeled images are split into three equal size sets of images. Each set of images is predicted based on the other two sets of images. The accuracy of the model's ability to predict each set of images is averaged giving the confidence value.&quot;">
-                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5></a>
-            {% endif %}
-			<h5 class="font-weight-normal">Modified Confidence: {{confidence_modified}}</h5>
-			<h5 class="font-weight-normal">Pre-Trained Confidence: {{confidence_preTrain}}</h5>
-			<form action="final.html" method="post">
-				<input type = 'submit' value = 'Generate ML Mutations'>
+			<table class="table table-bordered table-custom">
+				<tr>
+					<th>Model</th>
+					<th>Confidence
+						<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The confidence level is based on the average of cross-validation. &quot;More specifically the labeled images are split into three equal size sets of images. Each set of images is predicted based on the other two sets of images. The accuracy of the model's ability to predict each set of images is averaged giving the confidence value.&quot;">
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5>
+						</a>
+					</th>
+					<th>Accuracy
+						<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The accuracy is calculated as the correct number of predictions that the model makes against the total number of images in the test data.">
+                            <span class="fa fa-info-circle" style="font-size:24px"></span></h5>
+						</a>
+					</th>
+				</tr>
+				<tr>
+					<td>Regular</td>
+					<td>{{ "{:.0%}".format(c_list[-1]) }}</td>
+					<td>{{ "{:.0%}".format(accuracy[-1]) }}</td>
+				</tr>
+				<tr>
+					<td>Modified</td>
+					<td>{{ "{:.0%}".format(c_modified_list[-1]) }}</td>
+					<td>{{ "{:.0%}".format(accuracy_modified[-1]) }}</td>
+				</tr>
+				<tr>
+					<td>Pretrained</td>
+					<td>{{ "{:.0%}".format(c_pretrain_list[-1]) }}</td>
+					<td>{{ "{:.0%}".format(accuracy_pretrain[-1]) }}</td>
+				</tr>
+			</table>
+			<!-- <h5 class="font-weight-normal">Modified Confidence: {{confidence_modified}}</h5>
+			<h5 class="font-weight-normal">Pre-Trained Confidence: {{confidence_preTrain}}</h5> -->
+			<h5 class="font-weight-normal" style = 'clear:both;'>User Accuracy: {{ "{:.0%}".format(user_accuracy) }}
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="The number of classifications that the user has made correctly.">
+					<span class="fa fa-info-circle" style="font-size:24px"></span>
+				</a>
+			</h5>
+			<form action="final.html" id = 'generate_mutation_form' method="post">
+				<input id = 'mutation_type' name = 'mutation_type' style = 'display:none'>
+				<button type="button" class="btn btn-primary header-btn-primary" data-toggle="modal" data-target="#mutationModal">
+					Mutation Differential Analysis
+				</button>
+				<div class="dropdown show">
+					<a class="btn btn-primary dropdown-toggle header-btn-primary" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Generate Mutation
+					</a>
+					<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+						<a class="dropdown-item" onclick = 'generate_mutation("hp")'>Hyperparameter Mutation</a>
+						<a class="dropdown-item" onclick = 'generate_mutation("sv")'>Support Vector Mutation</a>
+					</div>
+				</div>
+				<!-- <button class="btn btn-primary" >Generate Hyperparameter Mutation</button><br>
+				<button class="btn btn-primary" >Generate Support Vector Mutation</button><br> -->
 			</form>
 		</div>
         <div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy(User):
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy (User):
 				{{healthNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
             </h5>
 
@@ -41,17 +121,11 @@
 						alt="">
 				</div>
 				{%endfor%}
-				<div id="imgModal" class="modal">
-
-					<span class="close">&times;</span>
-
-					<img class="modal-content" id="imgset">
-				</div>
 			</div>
 		</div>
 		<div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy(User):
+			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy (User):
 				{{blightNum_user}} <a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a>
             </h5>
 
@@ -65,72 +139,76 @@
 						alt="">
 				</div>
 				{%endfor%}
-				<div id="imgModal" class="modal">
-
-					<span class="close">&times;</span>
-
-					<img class="modal-content" id="imgset">
-				</div>
 			</div>
 		</div>
-		<div class="container">
+		<form action="final.html" method="post" id = 'get_more_results_form'>
+			<div class="container">
 
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Healthy Test (Machine): {{healthyNum}} ({{healthyPct}})
-			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Healthy&quot; images in the image set of predicting results">
-                <span class="fa fa-info-circle" style="font-size:24px"></span></a>
-			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size">
-			    <span class="fa fa-search"></span></a></h5>
+				<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">
+					Healthy Test (Machine): {{healthyNum}} ({{healthyPct}}) Search limit
+					<select name = 'result_limit' class = 'custom-select result_limit' onchange = 'submit_results_form(this.value)'>
+						{% for option in result_opts %}
+							{% if option == h_loop %}
+								<option selected>{{ option }}</option>
+							{% else %}
+								<option>{{ option }}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Healthy&quot; images in the image set of predicting results">
+					<span class="fa fa-info-circle" style="font-size:24px"></span></a>
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size">
+					<span class="fa fa-search"></span></a></h5>
 
-			<hr class="mt-2 mb-5">
+				<hr class="mt-2 mb-5">
 
-			<div class="row text-center text-lg-left">
-				{%for i in range(0, healthyNum)%}
-				<div id="healthy_checkboxes" class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
-					<img class="img-fluid img-rounded"
-						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{health_test[i]}}"
-						alt="">
-					<h6 class="font-weight-normal">Individual Confidence: {{"{:.0%}".format(h_prob[i])}}
-					<h6 class="font-weight-normal">Disagree with the prediction?
-	                <input type="checkbox" name="healthy" value="{{health_test[i]}}" conf-value="{{h_prob[i]}}"><br>
-				</div>
-				{%endfor%}
-				<div id="imgModal" class="modal">
-
-					<span class="close">&times;</span>
-
-					<img class="modal-content" id="imgset">
-				</div>
-			</div>
-		</div>
-
-		<div class="container">
-
-			<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">Unhealthy Test (Machine): {{unhealthyNum}} ({{unhealthyPct}})
-			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Unhealthy&quot; images in the image set of predicting results">
-                            <span class="fa fa-info-circle" style="font-size:24px"></span></a>
-			<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a></h5>
-
-			<hr class="mt-2 mb-5">
-
-			<div class="row text-center text-lg-left">
-				{%for i in range(0, unhealthyNum)%}
-				<div id="unhealthy_checkboxes" class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
-					<img class="img-fluid img-rounded"
-						src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{unhealth_test[i]}}"
-						alt="">
-					<h6 class="font-weight-normal">Individual Confidence: {{"{:.0%}".format(b_prob[i])}}
-					<h6 class="font-weight-normal">Disagree with the prediction?
-	                <input type="checkbox" name="unhealthy" value="{{unhealth_test[i]}}" conf-value="{{b_prob[i]}}"><br>
-				</div>
-				{%endfor%}
-				<div id="imgModal" class="modal">
-
-					<span class="close">&times;</span>
-
-					<img class="modal-content" id="imgset">
+				<div class="row text-center text-lg-left">
+					{%for i in range(0, h_loop)%}
+					<div id="healthy_checkboxes" class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+						<img class="img-fluid img-rounded"
+							src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{health_test[i]}}"
+							alt="">
+						<h6 class="font-weight-normal">Individual Confidence: {{"{:.0%}".format(h_prob[i])}}
+						<h6 class="font-weight-normal">Disagree with the prediction?
+						<input type="checkbox" name="healthy" value="{{health_test[i]}}" conf-value="{{h_prob[i]}}"><br>
+					</div>
+					{%endfor%}
 				</div>
 			</div>
-        </div>
+
+			<div class="container">
+
+				<h5 class="font-weight-light text-center text-lg-left mt-4 mb-0">
+					Unhealthy Test (Machine): {{unhealthyNum}} ({{unhealthyPct}}) Search limit
+					<select class = 'custom-select result_limit' onchange = 'submit_results_form(this.value)'>
+						{% for option in result_opts %}
+							{% if option == u_loop %}
+								<option value = '{{ option }}' selected>{{ option }}</option>
+							{% else %}
+								<option value = '{{ option }}'>{{ option }}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="This is the percentage of &quot;Unhealthy&quot; images in the image set of predicting results">
+								<span class="fa fa-info-circle" style="font-size:24px"></span></a>
+				<a href="javascript:void(0)" data-toggle="popover" data-trigger="focus" data-content="Click on image to view full size"> <span class="fa fa-search"></span></a></h5>
+
+				<hr class="mt-2 mb-5">
+
+				<div class="row text-center text-lg-left">
+					{%for i in range(0, u_loop)%}
+					<div id="unhealthy_checkboxes" class="col-lg-3 col-md-4 col-6 d-block mb-4 h-100">
+						<img class="img-fluid img-rounded"
+							src="https://cornimagesbucket.s3.us-east-2.amazonaws.com/images_compressed/{{unhealth_test[i]}}"
+							alt="">
+						<h6 class="font-weight-normal">Individual Confidence: {{"{:.0%}".format(b_prob[i])}}
+						<h6 class="font-weight-normal">Disagree with the prediction?
+						<input type="checkbox" name="unhealthy" value="{{unhealth_test[i]}}" conf-value="{{b_prob[i]}}"><br>
+					</div>
+					{%endfor%}
+				</div>
+			</div>
+		</form>
         <div class="container">
             <hr class="mt-2 mb-5">
             <div id="result">
@@ -140,80 +218,347 @@
 			    <button id="img" class="mb-2 mt-4 active_button">Show Selected Images</button>
 			</div>
 		</div>
+		<div id="imgModal" class="image_modal">
+
+			<span class="close">&times;</span>
+
+			<img class="modal-content-custom model-content" id="imgset">
+		</div>
+		<div class="modal fade" id="mutationModal" tabindex="-1" role="dialog" aria-labelledby="mutationModalTitle" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+			  <div class="modal-content">
+				<div class="modal-header">
+				  <h5 class="modal-title" id="exampleModalLongTitle" style = 'margin-top: 15px;'>ML Hyperparameter Mutations</h5>
+				  <div class="btn-group btn-group-toggle btn-listener" style = 'margin-right: 3em;' data-toggle="buttons">
+					<label class="btn btn-secondary active">
+					  <input type="radio" name="mutation_table_opt" id="regular" autocomplete="off" onclick = 'mutation_tables(this)' checked > Regular Model
+					</label>
+					<label class="btn btn-secondary">
+					  <input type="radio" name="mutation_table_opt" id="modified" autocomplete="off" onclick = 'mutation_tables(this)'> Modified Model
+					</label>
+					<label class="btn btn-secondary">
+					  <input type="radio" name="mutation_table_opt" id="pretrain" autocomplete="off" onclick = 'mutation_tables(this)'> Pre-Trained Model
+					</label>
+				</div>
+				  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				  </button>
+				</div>
+				<div class="modal-body">
+					<table id = "regular_table" class = 'table table-striped mutation_table'>
+						<thead class = 'thead-light'>
+							<tr>
+								<th>Mutation Type</th>
+								<th>ML Mutation</th>
+								<th>Confidence</th>
+								<th>Healthy - Unhealthy</th>
+								<th>Accuracy</th>
+							</tr>
+						</thead>
+						
+						{% for i in range(0, ml_model_list|length) %}
+							<tr>
+								{% if m_list[i] == "" %}
+									<td>No Change</td>
+								{% elif m_list[i][:2] == 'sv' %}
+									<td>SV Change</td>
+								{% else %}
+									<td>HP Change</td>
+								{% endif %}
+								<td class = 'regular_ml_classifier'>{{ ml_model_list[i] }}</td>
+								<td>{{ "{:.0%}".format(c_list[i]) }}</td>
+								<td>{{ reg_h_b_count[i] }}</td>
+								<td>{{ "{:.0%}".format(accuracy[i]) }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+					<table id = "modified_table" class = 'table table-striped mutation_table' style = 'display:none'>
+						<thead class = 'thead-light'>
+							<tr>
+								<th>Mutation Type</th>
+								<th>ML Mutation</th>
+								<th>Confidence</th>
+								<th>Healthy - Unhealthy</th>
+								<th>Accuracy</th>
+							</tr>
+						</thead>
+						
+						{% for i in range(0, ml_modified_list|length) %}
+							<tr>
+								{% if m_list_modified[i] == "" %}
+									<td>No Change</td>
+								{% elif m_list_modified[i][:2] == 'sv' %}
+									<td>SV Change</td>
+								{% else %}
+									<td>HP Change</td>
+								{% endif %}
+								<td class = 'modified_ml_classifier'>{{ ml_modified_list[i] }}</td>
+								<td>{{ "{:.0%}".format(c_modified_list[i]) }}</td>
+								<td>{{ MD_h_b_count[i] }}</td>
+								<td>{{ "{:.0%}".format(accuracy_modified[i]) }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+					<table id = "pretrain_table" class = 'table table-striped mutation_table' style = 'display:none'>
+						<thead class = 'thead-light'>
+							<tr>
+								<th>Mutation Type</th>
+								<th>ML Mutation</th>
+								<th>Confidence</th>
+								<th>Healthy - Unhealthy</th>
+								<th>Accuracy</th>
+							</tr>
+						</thead>
+						
+						{% for i in range(0, ml_pretrain_list|length) %}
+							<tr>
+								{% if m_list_pretrain[i] == "" %}
+									<td>No Change</td>
+								{% elif m_list_pretrain[i][:2] == 'sv' %}
+									<td>SV Change</td>
+								{% else %}
+									<td>HP Change</td>
+								{% endif %}
+								<td class = 'pretrain_ml_classifier'>{{ ml_pretrain_list[i] }}</td>
+								<td>{{ "{:.0%}".format(c_pretrain_list[i]) }}</td>
+								<td>{{ PT_h_b_count[i] }}</td>
+								<td>{{ "{:.0%}".format(accuracy_pretrain[i]) }}</td>
+							</tr>
+						{% endfor %}
+					</table>
+				</div>
+			  </div>
+			</div>
+		  </div>
 	</div>
     <footer class="page-footer font-small">
     <div class="footer-copyright text-center py-3">&copy; 2020 Copyright:
     <a href="/">CornAI</a>
     </div>
     </footer>
+	<script type = "text/javascript" src="{{ url_for('static',filename='js/mr_formats.js') }}"></script>
 	<script>
-	var modal = document.getElementById('imgModal');
-	var images = document.querySelectorAll(".img-rounded");
-	var modalImg = document.getElementById("imgset");
-	for(let i = 0; i < images.length; i++){
-	  images[i].onclick = function(){
-	    modal.style.display = "block";
-	    modalImg.src = this.src;
-	  }
-	}
 
-	var span = document.getElementsByClassName("close")[0];
+		// Get variables passed in from python
+		const m_list = {{ m_list | tojson }},
+			m_list_modified = {{ m_list_modified | tojson }},
+			m_list_pretrain = {{ m_list_pretrain | tojson }},
+			model_type = "{{model_type}}",
+			normalize_data = "{{normalize_data}}",
+			invert_data = "{{invert_data}}",
+			permute_data = "{{permute_data}}",
+			rgb = "{{rgb}}",
+			multiply_by_constant = "{{multiply_by_constant}}",
+			transform = "{{transform}}";
 
-	span.onclick = function(){
-	  modal.style.display = "none";
-	}
-	$(document).ready(function(){
-        $('[data-toggle="popover"]').popover();
-    });
+		var modal = document.getElementById('imgModal');
+		var images = document.querySelectorAll(".img-rounded");
+		var modalImg = document.getElementById("imgset");
+		for(let i = 0; i < images.length; i++){
+		images[i].onclick = function(){
+			modal.style.display = "block";
+			modalImg.src = this.src;
+		}
+		}
 
-    const healthyselectedElm = document.getElementById('healthyselected');
-    const unhealthyselectedElm = document.getElementById('unhealthyselected');
+		var span = document.getElementsByClassName("close")[0];
 
-    function showChecked(){
-    healthyselectedElm.innerHTML = document.querySelectorAll('input[name=healthy]:checked').length;
-    unhealthyselectedElm.innerHTML = document.querySelectorAll('input[name=unhealthy]:checked').length;
-    }
+		span.onclick = function(){
+		modal.style.display = "none";
+		}
+		$(document).ready(function(){
+			$('[data-toggle="popover"]').popover();
+		});
 
-    document.querySelectorAll("input[name=healthy]").forEach(i=>{
-    i.onclick = () => showChecked();
-    });
+		// Add listener to radio button (determines which table to show/hide)
+		function mutation_tables(targ){
+			// Hide all tables
+			document.querySelectorAll('.mutation_table').forEach(function(a){
+				a.style.display = "none";
+			})
 
-    document.querySelectorAll("input[name=unhealthy]").forEach(i=>{
-    i.onclick = () => showChecked();
-    });
-    
-    $(document).ready(function(){
-        $('#img').on('click', function(){
-            
-            var healthy_list = [];
-            var unhealthy_list = [];
-            var healthy_conf_list = [];
-            var unhealthy_conf_list = [];
-            
-            $("input:checkbox[name=healthy]:checked").each(function(){
-                healthy_list.push($(this).attr("value"));
-                healthy_conf_list.push($(this).attr("conf-value"));
-            });
-            if(healthy_list.length == 0){
-                healthy_list.push("null");
-            }
-            if(healthy_conf_list.length == 0){
-                healthy_conf_list.push("0");
-            }
-            
-            $("input:checkbox[name=unhealthy]:checked").each(function(){
-                unhealthy_list.push($(this).attr("value"));
-                unhealthy_conf_list.push($(this).attr("conf-value"));
-            });
-            if(unhealthy_list.length == 0){
-               unhealthy_list.push("null"); 
-            }
-            if(unhealthy_conf_list.length == 0){
-                unhealthy_conf_list.push("0");
-            }            
-            window.location.href = '/feedback/' + healthy_list + "/" + unhealthy_list + "/" + healthy_conf_list + "/" + unhealthy_conf_list;                           
-        });
-    });
+			// Show relevant table
+			document.getElementById(targ.id + "_table").style.display = "";
+		}
+
+		const healthyselectedElm = document.getElementById('healthyselected');
+		const unhealthyselectedElm = document.getElementById('unhealthyselected');
+
+		function showChecked(){
+		healthyselectedElm.innerHTML = document.querySelectorAll('input[name=healthy]:checked').length;
+		unhealthyselectedElm.innerHTML = document.querySelectorAll('input[name=unhealthy]:checked').length;
+		}
+
+		document.querySelectorAll("input[name=healthy]").forEach(i=>{
+			i.onclick = () => showChecked();
+		});
+
+		document.querySelectorAll("input[name=unhealthy]").forEach(i=>{
+			i.onclick = () => showChecked();
+		});
+
+		/**
+		 * Handles creating diff report among generations of ML Hyperparameters
+		 * @author Alex Borchers
+		 * @param {String} cls (class name)
+		 * @param {array} list (list of mutations at each generation) 
+		*/
+		function create_diff_reporting(cls, list){
+			var class_col = document.getElementsByClassName(cls);
+			for (var i = 0; i < class_col.length; i++){
+
+				// Skip if no differences found when generating mutations (empty string)
+				if (list[i] == "")
+					continue;
+
+				// If first 2 are SV, treat differently
+				if (list[i].substr(0, 2) == "sv"){
+					var comma1 = list[i].indexOf(',');
+					var comma2 = list[i].indexOf(',', comma1 + 1);
+					var sv_index = list[i].substr(comma1 + 1, comma2 - comma1 - 1);
+					var sv_mult = list[i].substr(comma2 + 1, 5);
+					class_col[i].innerHTML = "Support Vector Index: " + sv_index + "<br>";
+					class_col[i].innerHTML += "Multiplier: " + sv_mult + "<br>";
+					continue;
+				}
+
+				// Seperate list into comma seperated (sometimes GPT generates multiple mutations)
+				var look_for = list[i].split(",");
+
+				for (var j = 0; j < look_for.length; j++){
+
+					// Find location of parameter in string
+					var pos1 = class_col[i].innerHTML.indexOf(look_for[j] + ":");
+
+					// If position found, locate position of first comma after, replace region with <span> that will highlight the area
+					if (pos1 > -1){
+						var pos2 = class_col[i].innerHTML.indexOf(",", pos1);
+						var str_replace = class_col[i].innerHTML.substr(pos1, pos2 - pos1);
+						class_col[i].innerHTML = class_col[i].innerHTML.replace(str_replace, "<span class = 'highlight_region'>" + str_replace + "</span>");
+					}
+				}
+			}
+		}
+
+		// Set globals for canvas width & height
+		const c_width = 1200, c_height = 800;
+
+		/**
+		 * Modifies an image depending on user defined MR relations
+		 * @param {Image} imageElement <img> tag to modify
+		 * 
+		*/
+		function modify_image(imageElement){
+
+			// Get image element
+			//var imageElement = document.getElementById('original_image');
+
+			// Create a canvas element
+			var canvas = document.createElement('canvas');
+			canvas.width = c_width;
+			canvas.height = c_height;
+
+			// Draw the image onto the canvas
+			var ctx = canvas.getContext('2d');
+			ctx.drawImage(imageElement, 0, 0);
+
+			// Get the image data from the canvas
+			var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+			if (normalize_data == "On")
+				ctx = reformat_by_normalizing_data(ctx, imageData);
+
+			if (invert_data == "On")
+				ctx = reformat_by_inverting_data(ctx, imageData);
+
+			if (permute_data == "On")
+				ctx = reformat_by_permutation(ctx, imageData);
+			
+			ctx = reformat_rgb(ctx, imageData, rgb);
+			ctx = reformat_by_constant(ctx, imageData, multiply_by_constant);
+			ctx = reformat_by_transform(ctx, imageData, transform, imageElement);
+
+			// Set the image source to the modified image data
+			imageElement.src = canvas.toDataURL();
+
+		}
+		
+		$(document).ready(function(){
+			$('#img').on('click', function(){
+				
+				var healthy_list = [];
+				var unhealthy_list = [];
+				var healthy_conf_list = [];
+				var unhealthy_conf_list = [];
+				
+				$("input:checkbox[name=healthy]:checked").each(function(){
+					healthy_list.push($(this).attr("value"));
+					healthy_conf_list.push($(this).attr("conf-value"));
+				});
+				if(healthy_list.length == 0){
+					healthy_list.push("null");
+				}
+				if(healthy_conf_list.length == 0){
+					healthy_conf_list.push("0");
+				}
+				
+				$("input:checkbox[name=unhealthy]:checked").each(function(){
+					unhealthy_list.push($(this).attr("value"));
+					unhealthy_conf_list.push($(this).attr("conf-value"));
+				});
+				if(unhealthy_list.length == 0){
+				unhealthy_list.push("null"); 
+				}
+				if(unhealthy_conf_list.length == 0){
+					unhealthy_conf_list.push("0");
+				}      
+				window.location.href = '/feedback/' + healthy_list + "/" + unhealthy_list + "/" + healthy_conf_list + "/" + unhealthy_conf_list;                           
+			});
+		});
+
+		/**
+		 * Handles submitting the form on select list change
+		*/
+		function submit_form(){
+			document.body.style.cursor = 'wait';
+			document.getElementById("update_results_form").submit();
+		}
+
+		/**
+		 * Handles submitting the form on select list change (more or less results)
+		*/
+		function submit_results_form(limit){
+			document.querySelectorAll('.result_limit').forEach(function(a){
+				a.value = limit;
+			})
+			document.body.style.cursor = 'wait';
+			document.getElementById("get_more_results_form").submit();
+		}
+
+		/**
+		 * Handles submitting form for mutation generation
+		 * @param {string} type (relates to type of mutation - hp/sv)
+		*/
+		function generate_mutation(type){		
+			document.body.style.cursor = 'wait';	
+			document.getElementById("mutation_type").value = type;
+			document.getElementById("generate_mutation_form").submit();
+		}
+
+		$('form').submit(function() {
+			document.body.style.cursor = 'wait';
+		});
+		
+		window.onload = function (){
+			// Set up differential reporting for ML Hyperparameters
+			create_diff_reporting('regular_ml_classifier', m_list);
+			create_diff_reporting('modified_ml_classifier', m_list_modified);
+			create_diff_reporting('pretrain_ml_classifier', m_list_pretrain);
+
+			// If model type is modified, update sample modified image
+			if (model_type == "Modified")
+				modify_image(document.getElementById("modified_image"));
+		}
 	</script>
 </body>
 </html>

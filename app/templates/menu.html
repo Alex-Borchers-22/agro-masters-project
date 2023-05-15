@@ -56,6 +56,10 @@
 							<h5>Invert Data</h5>
 							<input type = 'checkbox' name = 'invert_data' id = 'invert_data'><label for = 'invert_data'>Invert (On/Off)</label>
 						</div>
+						<div class = 'card-radio-div card-listener'>
+							<h5>Permutate</h5>
+							<input type = 'checkbox' name = 'permute_data' id = 'permute_data'><label for = 'permute_data'>Permutate (On/Off)</label>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -119,12 +123,10 @@
 								<span class="fas fa-bullhorn" style="font-size:24px"></span>
 							</a></h5>
 							<input name = 'gamma' type = 'radio' id = 'auto' value = 'auto' checked><label for = 'auto'>Auto</label> <br>
-							<input name = 'gamma' type = 'radio' id = 'scale' value = 'scale'><label for = 'scale'>Scale</label>
-							<!-- <input name = 'gamma' type = 'radio' id = 'g_0.0001' value = '0.1' checked><label for = 'g_0.0001'>0.0001</label> <br>
-							<input name = 'gamma' type = 'radio' id = 'g_0.001' value = '1'><label for = 'g_0.001'>0.001</label><br>
-							<input name = 'gamma' type = 'radio' id = 'g_0.01' value = '10'><label for = 'g_0.01'>0.01</label><br>
-							<input name = 'gamma' type = 'radio' id = 'g_0.1' value = '100'><label for = 'g_0.1'>0.1</label><br>
-							<input name = 'gamma' type = 'radio' id = 'g_1' value = '1000'><label for = 'g_1'>1</label><br> -->
+							<input name = 'gamma' type = 'radio' id = 'scale' value = 'scale'><label for = 'scale'>Scale</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'gamma_0.01' value = '0.01'><label for = 'gamma_0.01'>0.01</label> <br>
+							<input name = 'gamma' type = 'radio' id = 'gamma_1' value = '1'><label for = 'gamma_1'>1</label><br>
+							<input name = 'gamma' type = 'radio' id = 'gamma_100' value = '100'><label for = 'gamma_100'>100</label><br>
 						</div>
 					</div>
 				</div>
@@ -194,11 +196,14 @@
 
 	// Global for potential ml_tips
 	const ml_tips = [
-		"Metamorphic testing (MT) is a property-based software testing technique, which can be an effective approach for addressing the test oracle problem and test case generation problem.",
-		"MR Relation Tip 2",
-		"MR Relation Tip 3",
-		"MR Relation Tip 4",
-		"MR Relation Tip 5"
+		"Metamorphic testing is a property-based software testing technique, which can be an effective approach for addressing the test oracle problem and test case generation problem.",
+		"Mutation testing is a fault-based software testing technique which artificially introduces bugs or changes in a program that programmers often make. It can be applied to ML models to test the robustness of the model and quality of training data.",
+		"Metamorphic relations are used to design test cases for metamorphic testing. In each test case, the input is transformed or mutated in a specific way that preserves the metamorphic relation. The output of the system is then compared to the expected output based on the metamorphic relation. If the output does not match the expected output, there may be a bug in the system.",
+		"SVM is a type of machine learning model that is commonly used for classification and regression tasks. SVMs are based on the concept of finding the hyperplane that best separates the different classes in the input data.",
+		"SVM are often used for image classification tasks due to their ability to handle high-dimensional input data and their ability to handle non-linearly separable classes using the kernel trick.",
+		"One of the main differences between SVMs and deep learning models is that SVMs are a type of 'shallow' model, while deep learning models are characterized by their deep architecture with multiple layers.",
+		"Metamorphic testing has a wide range of applications across many industries, including software development, aerospace, automotive, finance, healthcare, and more.",
+		"Dwarakanath et. al (2018) testing the feasability of using Metamorphic Relations to check for implementation bugs. The paper focused on developing testing strategies for a CNN model and SVM model, and showed promising results for using this strategy to increase the reliability and robustness of ML models."
 	];
 
 	// Show next tip, hide GPT prompts & tips
@@ -232,10 +237,7 @@
 
 		// If this is custom, overwrite with contents of textarea
 		if (is_custom)
-			prompt = $('#ml_gpt_custom_question').val()
-
-		// Add caveat to keep response quick
-		prompt += " (Limit this response 40 words or less)";
+			prompt = $('#ml_gpt_custom_question').val();
 
 		// Ajax call to web.py port /gpt
 		$.ajax({
@@ -249,6 +251,9 @@
 		});
 	}
 
+	/**
+	 * Handles opening user question textarea - pre-filled with suggested prompt to Chat GPT
+	*/
 	function open_user_question(){
 		// Show user option, pre-fill with current prompt
 		$('#ml_gpt_user_question').show();
@@ -309,19 +314,21 @@
 		// Get the image data from the canvas
 		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-		ctx = reformat_rgb(ctx, imageData, $('input[type=radio][name=rgb_channel]:checked').attr('id'));
-		ctx = reformat_by_constant(ctx, imageData, $('input[type=radio][name=multiply_by_constant]:checked').attr('id'));
-		ctx = reformat_by_transform(ctx, imageData, $('input[type=radio][name=transform]:checked').attr('id'));
-
 		if (document.getElementById('normalize_data').checked)
 			ctx = reformat_by_normalizing_data(ctx, imageData);
 
 		if (document.getElementById('invert_data').checked)
 			ctx = reformat_by_inverting_data(ctx, imageData);
+
+		if (document.getElementById('permute_data').checked)
+			ctx = reformat_by_permutation(ctx, imageData);
 		
+		ctx = reformat_rgb(ctx, imageData, $('input[type=radio][name=rgb_channel]:checked').attr('id'));
+		ctx = reformat_by_constant(ctx, imageData, $('input[type=radio][name=multiply_by_constant]:checked').attr('id'));
+		ctx = reformat_by_transform(ctx, imageData, $('input[type=radio][name=transform]:checked').attr('id'), document.getElementById("modified_image"));
+
 		// Set the image source to the modified image data
 		document.getElementById('modified_image').src = canvas.toDataURL();
-
 	}
 
     </script>
